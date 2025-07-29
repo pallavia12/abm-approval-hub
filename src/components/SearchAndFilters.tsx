@@ -44,7 +44,7 @@ export const SearchAndFilters = ({
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {dateFilter ? format(dateFilter, "PPP") : <span>Filter by date</span>}
+              {dateFilter && !isNaN(dateFilter.getTime()) ? format(dateFilter, "PPP") : <span>Filter by date</span>}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
