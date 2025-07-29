@@ -4,10 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { LogOut } from "lucide-react";
 import ModifyRequestModal, { ModifyData } from "@/components/ModifyRequestModal";
 import EscalateRequestModal from "@/components/EscalateRequestModal";
+import { BulkActionBar } from "@/components/BulkActionBar";
+import { useActionHandler } from "@/hooks/useActionHandler";
 
 interface ApprovalRequest {
   requestId: string;
@@ -78,8 +81,10 @@ const Dashboard = () => {
   const [modifyModalOpen, setModifyModalOpen] = useState(false);
   const [escalateModalOpen, setEscalateModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<ApprovalRequest | null>(null);
+  const [selectedRequests, setSelectedRequests] = useState<string[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { executeAction, executeBulkAction, isActionDisabled, getActionTaken } = useActionHandler();
 
   useEffect(() => {
     const asgardUsername = localStorage.getItem("asgard_username");
@@ -100,7 +105,7 @@ const Dashboard = () => {
     navigate("/");
   };
 
-  const handleAction = (requestId: string, action: string) => {
+  const handleAction = async (requestId: string, action: string) => {
     if (action === "Modify") {
       const request = requests.find(r => r.requestId === requestId);
       if (request) {
@@ -119,14 +124,10 @@ const Dashboard = () => {
       return;
     }
 
-    toast({
-      title: "Action Taken",
-      description: `${action} action taken for request ${requestId}`,
-    });
-    // Here you would typically send the action to your backend
+    await executeAction(requestId, action as 'Accept' | 'Reject');
   };
 
-  const handleModifyConfirm = (modifyData: ModifyData) => {
+  const handleModifyConfirm = async (modifyData: ModifyData) => {
     if (!selectedRequest) return;
 
     const updatedRequests = requests.map(request => {
@@ -142,27 +143,77 @@ const Dashboard = () => {
     });
 
     setRequests(updatedRequests);
-    toast({
-      title: "Request Modified",
-      description: `Request ${selectedRequest.requestId} has been modified successfully`,
-    });
+    await executeAction(selectedRequest.requestId, 'Modify', modifyData);
   };
 
-  const handleEscalateConfirm = (remarks: string) => {
+  const handleEscalateConfirm = async (remarks: string) => {
     if (!selectedRequest) return;
 
-    toast({
-      title: "Request Escalated",
-      description: `Request ${selectedRequest.requestId} has been escalated with remarks: "${remarks}"`,
+    await executeAction(selectedRequest.requestId, 'Escalate', { remarks });
+  };
+
+  // Bulk action handlers
+  const handleSelectAll = () => {
+    const eligibleRequests = requests.filter(r => !isActionDisabled(r.requestId));
+    setSelectedRequests(eligibleRequests.map(r => r.requestId));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedRequests([]);
+  };
+
+  const handleBulkAccept = async () => {
+    const eligibleSelected = selectedRequests.filter(id => {
+      const request = requests.find(r => r.requestId === id);
+      return request?.eligibility === 1 && !isActionDisabled(id);
     });
+    
+    if (eligibleSelected.length > 0) {
+      await executeBulkAction(eligibleSelected, 'Accept');
+      setSelectedRequests([]);
+    }
+  };
+
+  const handleBulkReject = async () => {
+    const eligibleSelected = selectedRequests.filter(id => !isActionDisabled(id));
+    
+    if (eligibleSelected.length > 0) {
+      await executeBulkAction(eligibleSelected, 'Reject');
+      setSelectedRequests([]);
+    }
+  };
+
+  const handleCheckboxChange = (requestId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedRequests(prev => [...prev, requestId]);
+    } else {
+      setSelectedRequests(prev => prev.filter(id => id !== requestId));
+    }
   };
 
   const renderActionButtons = (request: ApprovalRequest) => {
+    const actionTaken = getActionTaken(request.requestId);
+    const disabled = isActionDisabled(request.requestId);
+
+    if (actionTaken) {
+      return (
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="text-xs">
+            {actionTaken.action}d
+          </Badge>
+          <span className="text-xs text-muted-foreground">
+            {new Date(actionTaken.timestamp).toLocaleString()}
+          </span>
+        </div>
+      );
+    }
+
     const commonButtons = (
       <>
         <Button 
           variant="destructive" 
           size="sm"
+          disabled={disabled}
           onClick={() => handleAction(request.requestId, "Reject")}
         >
           Reject
@@ -170,6 +221,7 @@ const Dashboard = () => {
         <Button 
           variant="outline" 
           size="sm"
+          disabled={disabled}
           onClick={() => handleAction(request.requestId, "Modify")}
         >
           Modify
@@ -183,6 +235,7 @@ const Dashboard = () => {
           <Button 
             variant="default" 
             size="sm"
+            disabled={disabled}
             onClick={() => handleAction(request.requestId, "Accept")}
           >
             Accept
@@ -196,6 +249,7 @@ const Dashboard = () => {
           <Button 
             variant="secondary" 
             size="sm"
+            disabled={disabled}
             onClick={() => handleAction(request.requestId, "Escalate")}
           >
             Escalate
@@ -221,6 +275,16 @@ const Dashboard = () => {
           </Button>
         </div>
 
+        {/* Bulk Action Bar */}
+        <BulkActionBar
+          selectedRequests={selectedRequests}
+          totalRequests={requests.filter(r => !isActionDisabled(r.requestId)).length}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleDeselectAll}
+          onBulkAccept={handleBulkAccept}
+          onBulkReject={handleBulkReject}
+        />
+
         {/* Requests Table */}
         <Card>
           <CardHeader>
@@ -231,6 +295,7 @@ const Dashboard = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">Select</TableHead>
                     <TableHead>Request ID</TableHead>
                     <TableHead>Customer Details</TableHead>
                     <TableHead>Campaign Type</TableHead>
@@ -244,6 +309,15 @@ const Dashboard = () => {
                 <TableBody>
                   {requests.map((request) => (
                     <TableRow key={request.requestId}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedRequests.includes(request.requestId)}
+                          onCheckedChange={(checked) => 
+                            handleCheckboxChange(request.requestId, checked as boolean)
+                          }
+                          disabled={isActionDisabled(request.requestId)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">
                         {request.requestId}
                       </TableCell>
