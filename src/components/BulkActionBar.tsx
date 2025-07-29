@@ -25,7 +25,7 @@ export const BulkActionBar = ({
   return (
     <Card className="mb-4">
       <CardContent className="py-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="outline"
@@ -45,20 +45,22 @@ export const BulkActionBar = ({
           </div>
 
           {hasSelections && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full sm:w-auto">
               <Button
                 variant="default"
                 size="sm"
                 onClick={onBulkAccept}
+                className="flex-1 sm:flex-none"
               >
-                Bulk Accept ({selectedRequests.length})
+                Accept ({selectedRequests.length})
               </Button>
               <Button
                 variant="destructive"
                 size="sm"
                 onClick={onBulkReject}
+                className="flex-1 sm:flex-none"
               >
-                Bulk Reject ({selectedRequests.length})
+                Reject ({selectedRequests.length})
               </Button>
             </div>
           )}

@@ -17,6 +17,7 @@ interface ApprovalRequest {
   requestedBy: string;
   requestedByContact: string;
   eligibility: 0 | 1;
+  createdAt?: string;
 }
 
 interface RequestCardProps {
@@ -42,10 +43,20 @@ export const RequestCard = ({
     const disabled = isDisabled || bulkModeActive;
 
     if (actionTaken) {
+      const getActionPastTense = (action: string) => {
+        switch (action) {
+          case 'Accept': return 'Accepted';
+          case 'Reject': return 'Rejected';
+          case 'Modify': return 'Modified';
+          case 'Escalate': return 'Escalated';
+          default: return `${action}ed`;
+        }
+      };
+
       return (
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="text-xs">
-            {actionTaken.action}ed
+            {getActionPastTense(actionTaken.action)}
           </Badge>
           <span className="text-xs text-muted-foreground">
             {new Date(actionTaken.timestamp).toLocaleString()}
@@ -134,6 +145,12 @@ export const RequestCard = ({
           <h4 className="font-medium text-sm text-muted-foreground mb-1">Customer</h4>
           <div className="font-medium">{request.name} ({request.customerId})</div>
           <div className="text-sm text-muted-foreground">{request.contactNumber}</div>
+        </div>
+
+        {/* Request Date */}
+        <div>
+          <h4 className="font-medium text-sm text-muted-foreground mb-1">Requested Date</h4>
+          <div className="text-sm">{new Date(request.createdAt || new Date()).toLocaleDateString()}</div>
         </div>
 
         {/* Campaign & Order Info */}
