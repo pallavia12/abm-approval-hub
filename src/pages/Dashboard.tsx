@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { LogOut } from "lucide-react";
+import ModifyRequestModal, { ModifyData } from "@/components/ModifyRequestModal";
+import EscalateRequestModal from "@/components/EscalateRequestModal";
 
 interface ApprovalRequest {
   requestId: string;
@@ -73,6 +75,9 @@ const mockData: ApprovalRequest[] = [
 const Dashboard = () => {
   const [requests, setRequests] = useState<ApprovalRequest[]>([]);
   const [username, setUsername] = useState<string>("");
+  const [modifyModalOpen, setModifyModalOpen] = useState(false);
+  const [escalateModalOpen, setEscalateModalOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<ApprovalRequest | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -96,11 +101,60 @@ const Dashboard = () => {
   };
 
   const handleAction = (requestId: string, action: string) => {
+    if (action === "Modify") {
+      const request = requests.find(r => r.requestId === requestId);
+      if (request) {
+        setSelectedRequest(request);
+        setModifyModalOpen(true);
+      }
+      return;
+    }
+    
+    if (action === "Escalate") {
+      const request = requests.find(r => r.requestId === requestId);
+      if (request) {
+        setSelectedRequest(request);
+        setEscalateModalOpen(true);
+      }
+      return;
+    }
+
     toast({
       title: "Action Taken",
       description: `${action} action taken for request ${requestId}`,
     });
     // Here you would typically send the action to your backend
+  };
+
+  const handleModifyConfirm = (modifyData: ModifyData) => {
+    if (!selectedRequest) return;
+
+    const updatedRequests = requests.map(request => {
+      if (request.requestId === selectedRequest.requestId) {
+        return {
+          ...request,
+          ...(modifyData.orderKg !== undefined && { orderValue: modifyData.orderKg }),
+          ...(modifyData.discountType !== undefined && { discountType: modifyData.discountType }),
+          ...(modifyData.discountValue !== undefined && { discountValue: modifyData.discountValue }),
+        };
+      }
+      return request;
+    });
+
+    setRequests(updatedRequests);
+    toast({
+      title: "Request Modified",
+      description: `Request ${selectedRequest.requestId} has been modified successfully`,
+    });
+  };
+
+  const handleEscalateConfirm = (remarks: string) => {
+    if (!selectedRequest) return;
+
+    toast({
+      title: "Request Escalated",
+      description: `Request ${selectedRequest.requestId} has been escalated with remarks: "${remarks}"`,
+    });
   };
 
   const renderActionButtons = (request: ApprovalRequest) => {
@@ -178,8 +232,8 @@ const Dashboard = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Request ID</TableHead>
-                    <TableHead>Customer Info</TableHead>
-                    <TableHead>Campaign Details</TableHead>
+                    <TableHead>Customer Details</TableHead>
+                    <TableHead>Campaign Type</TableHead>
                     <TableHead>Order Info</TableHead>
                     <TableHead>Discount Details</TableHead>
                     <TableHead>Requested By</TableHead>
@@ -194,28 +248,25 @@ const Dashboard = () => {
                         {request.requestId}
                       </TableCell>
                       <TableCell>
-                        <div className="space-y-1">
-                          <div className="font-medium">{request.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            ID: {request.customerId}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {request.contactNumber}
-                          </div>
+                        <div className="font-medium">
+                          {request.name} ({request.customerId})
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {request.contactNumber}
                         </div>
                       </TableCell>
                       <TableCell>
+                        <div>{request.campaignType}</div>
+                      </TableCell>
+                      <TableCell>
                         <div className="space-y-1">
-                          <div>{request.campaignType}</div>
+                          <div className="font-medium">{request.orderValue} kg</div>
                           {request.skuName && (
                             <div className="text-sm text-muted-foreground">
                               SKU: {request.skuName}
                             </div>
                           )}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>{request.orderValue} kg</div>
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
@@ -242,11 +293,13 @@ const Dashboard = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge 
-                          variant={request.eligibility === 1 ? "default" : "destructive"}
-                        >
+                        <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                          request.eligibility === 1 
+                            ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400" 
+                            : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+                        }`}>
                           {request.eligibility === 1 ? "Eligible" : "Not Eligible"}
-                        </Badge>
+                        </div>
                       </TableCell>
                       <TableCell>
                         {renderActionButtons(request)}
@@ -258,6 +311,29 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Modals */}
+        {selectedRequest && (
+          <>
+            <ModifyRequestModal
+              isOpen={modifyModalOpen}
+              onClose={() => setModifyModalOpen(false)}
+              onConfirm={handleModifyConfirm}
+              requestId={selectedRequest.requestId}
+              currentData={{
+                orderValue: selectedRequest.orderValue,
+                discountType: selectedRequest.discountType,
+                discountValue: selectedRequest.discountValue,
+              }}
+            />
+            <EscalateRequestModal
+              isOpen={escalateModalOpen}
+              onClose={() => setEscalateModalOpen(false)}
+              onConfirm={handleEscalateConfirm}
+              requestId={selectedRequest.requestId}
+            />
+          </>
+        )}
       </div>
     </div>
   );
