@@ -193,13 +193,13 @@ const Dashboard = () => {
 
   const renderActionButtons = (request: ApprovalRequest) => {
     const actionTaken = getActionTaken(request.requestId);
-    const disabled = isActionDisabled(request.requestId);
+    const disabled = isActionDisabled(request.requestId) || selectedRequests.length > 0;
 
     if (actionTaken) {
       return (
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="text-xs">
-            {actionTaken.action}d
+            {actionTaken.action}ed
           </Badge>
           <span className="text-xs text-muted-foreground">
             {new Date(actionTaken.timestamp).toLocaleString()}
@@ -296,14 +296,15 @@ const Dashboard = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">Select</TableHead>
-                    <TableHead>Request ID</TableHead>
-                    <TableHead>Customer Details</TableHead>
-                    <TableHead>Campaign Type</TableHead>
-                    <TableHead>Order Info</TableHead>
-                    <TableHead>Discount Details</TableHead>
-                    <TableHead>Requested By</TableHead>
-                    <TableHead>Eligibility</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead className="min-w-[100px]">Request ID</TableHead>
+                    <TableHead className="min-w-[200px]">Customer Details</TableHead>
+                    <TableHead className="min-w-[120px]">Campaign Type</TableHead>
+                    <TableHead className="min-w-[120px]">Order Info</TableHead>
+                    <TableHead className="min-w-[140px]">Discount Details</TableHead>
+                    <TableHead className="min-w-[180px]">Reason</TableHead>
+                    <TableHead className="min-w-[150px]">Requested By</TableHead>
+                    <TableHead className="min-w-[100px]">Eligibility</TableHead>
+                    <TableHead className="min-w-[200px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -351,11 +352,11 @@ const Dashboard = () => {
                           <div className="text-sm text-muted-foreground">
                             Type: {request.discountType}
                           </div>
-                          {request.reason && (
-                            <div className="text-sm text-muted-foreground">
-                              Reason: {request.reason}
-                            </div>
-                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {request.reason || "No reason specified"}
                         </div>
                       </TableCell>
                       <TableCell>
