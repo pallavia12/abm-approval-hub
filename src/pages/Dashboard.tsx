@@ -2,15 +2,14 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { LogOut } from "lucide-react";
 import ModifyRequestModal, { ModifyData } from "@/components/ModifyRequestModal";
 import EscalateRequestModal from "@/components/EscalateRequestModal";
 import { BulkActionBar } from "@/components/BulkActionBar";
 import { useActionHandler } from "@/hooks/useActionHandler";
+import { RequestCard } from "@/components/RequestCard";
+import { SearchAndFilters } from "@/components/SearchAndFilters";
 
 interface ApprovalRequest {
   requestId: string;
@@ -26,6 +25,7 @@ interface ApprovalRequest {
   requestedBy: string;
   requestedByContact: string;
   eligibility: 0 | 1;
+  createdAt?: string;
 }
 
 // Mock data
@@ -44,6 +44,7 @@ const mockData: ApprovalRequest[] = [
     requestedBy: "Sales Rep A",
     requestedByContact: "+91-9876543211",
     eligibility: 1,
+    createdAt: "2024-01-15",
   },
   {
     requestId: "REQ-002",
@@ -57,6 +58,7 @@ const mockData: ApprovalRequest[] = [
     requestedBy: "Sales Rep B",
     requestedByContact: "+91-9876543213",
     eligibility: 0,
+    createdAt: "2024-01-14",
   },
   {
     requestId: "REQ-003",
@@ -72,6 +74,7 @@ const mockData: ApprovalRequest[] = [
     requestedBy: "Sales Rep C",
     requestedByContact: "+91-9876543215",
     eligibility: 1,
+    createdAt: "2024-01-13",
   },
 ];
 
@@ -82,6 +85,8 @@ const Dashboard = () => {
   const [escalateModalOpen, setEscalateModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<ApprovalRequest | null>(null);
   const [selectedRequests, setSelectedRequests] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [dateFilter, setDateFilter] = useState<string>("all");
   const navigate = useNavigate();
   const { toast } = useToast();
   const { executeAction, executeBulkAction, isActionDisabled, getActionTaken } = useActionHandler();
@@ -191,74 +196,35 @@ const Dashboard = () => {
     }
   };
 
-  const renderActionButtons = (request: ApprovalRequest) => {
-    const actionTaken = getActionTaken(request.requestId);
-    const disabled = isActionDisabled(request.requestId) || selectedRequests.length > 0;
+  // Filter requests based on search and date filter
+  const filteredRequests = requests.filter(request => {
+    const matchesSearch = 
+      request.customerId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      request.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      request.requestedBy.toLowerCase().includes(searchQuery.toLowerCase());
 
-    if (actionTaken) {
-      return (
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="text-xs">
-            {actionTaken.action}ed
-          </Badge>
-          <span className="text-xs text-muted-foreground">
-            {new Date(actionTaken.timestamp).toLocaleString()}
-          </span>
-        </div>
-      );
+    if (!matchesSearch) return false;
+
+    if (dateFilter === "all") return true;
+    
+    const requestDate = new Date(request.createdAt || "2024-01-15");
+    const today = new Date();
+    
+    switch (dateFilter) {
+      case "today":
+        return requestDate.toDateString() === today.toDateString();
+      case "week":
+        const weekAgo = new Date(today);
+        weekAgo.setDate(today.getDate() - 7);
+        return requestDate >= weekAgo;
+      case "month":
+        const monthAgo = new Date(today);
+        monthAgo.setMonth(today.getMonth() - 1);
+        return requestDate >= monthAgo;
+      default:
+        return true;
     }
-
-    const commonButtons = (
-      <>
-        <Button 
-          variant="destructive" 
-          size="sm"
-          disabled={disabled}
-          onClick={() => handleAction(request.requestId, "Reject")}
-        >
-          Reject
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm"
-          disabled={disabled}
-          onClick={() => handleAction(request.requestId, "Modify")}
-        >
-          Modify
-        </Button>
-      </>
-    );
-
-    if (request.eligibility === 1) {
-      return (
-        <div className="flex gap-2">
-          <Button 
-            variant="default" 
-            size="sm"
-            disabled={disabled}
-            onClick={() => handleAction(request.requestId, "Accept")}
-          >
-            Accept
-          </Button>
-          {commonButtons}
-        </div>
-      );
-    } else {
-      return (
-        <div className="flex gap-2">
-          <Button 
-            variant="secondary" 
-            size="sm"
-            disabled={disabled}
-            onClick={() => handleAction(request.requestId, "Escalate")}
-          >
-            Escalate
-          </Button>
-          {commonButtons}
-        </div>
-      );
-    }
-  };
+  });
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -275,117 +241,55 @@ const Dashboard = () => {
           </Button>
         </div>
 
+        {/* Search and Filters */}
+        <SearchAndFilters
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          dateFilter={dateFilter}
+          onDateFilterChange={setDateFilter}
+        />
+
         {/* Bulk Action Bar */}
         <BulkActionBar
           selectedRequests={selectedRequests}
-          totalRequests={requests.filter(r => !isActionDisabled(r.requestId)).length}
+          totalRequests={filteredRequests.filter(r => !isActionDisabled(r.requestId)).length}
           onSelectAll={handleSelectAll}
           onDeselectAll={handleDeselectAll}
           onBulkAccept={handleBulkAccept}
           onBulkReject={handleBulkReject}
         />
 
-        {/* Requests Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Pending Approval Requests</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">Select</TableHead>
-                    <TableHead className="min-w-[100px]">Request ID</TableHead>
-                    <TableHead className="min-w-[200px]">Customer Details</TableHead>
-                    <TableHead className="min-w-[120px]">Campaign Type</TableHead>
-                    <TableHead className="min-w-[120px]">Order Info</TableHead>
-                    <TableHead className="min-w-[140px]">Discount Details</TableHead>
-                    <TableHead className="min-w-[180px]">Reason</TableHead>
-                    <TableHead className="min-w-[150px]">Requested By</TableHead>
-                    <TableHead className="min-w-[100px]">Eligibility</TableHead>
-                    <TableHead className="min-w-[200px]">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {requests.map((request) => (
-                    <TableRow key={request.requestId}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedRequests.includes(request.requestId)}
-                          onCheckedChange={(checked) => 
-                            handleCheckboxChange(request.requestId, checked as boolean)
-                          }
-                          disabled={isActionDisabled(request.requestId)}
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {request.requestId}
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">
-                          {request.name} ({request.customerId})
-                        </div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {request.contactNumber}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>{request.campaignType}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="font-medium">{request.orderValue} kg</div>
-                          {request.skuName && (
-                            <div className="text-sm text-muted-foreground">
-                              SKU: {request.skuName}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div>
-                            {request.discountValue}
-                            {request.discountType === "Percentage" ? "%" : " ₹"}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            Type: {request.discountType}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {request.reason || "No reason specified"}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div>{request.requestedBy}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {request.requestedByContact}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                          request.eligibility === 1 
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400" 
-                            : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-                        }`}>
-                          {request.eligibility === 1 ? "Eligible" : "Not Eligible"}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {renderActionButtons(request)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+        {/* Request Cards */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold">
+              Approval Requests ({filteredRequests.length})
+            </h2>
+          </div>
+          
+          {filteredRequests.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <p className="text-muted-foreground">No requests found matching your criteria.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {filteredRequests.map((request) => (
+                <RequestCard
+                  key={request.requestId}
+                  request={request}
+                  isSelected={selectedRequests.includes(request.requestId)}
+                  isDisabled={isActionDisabled(request.requestId)}
+                  onSelectionChange={handleCheckboxChange}
+                  onAction={handleAction}
+                  actionTaken={getActionTaken(request.requestId)}
+                  bulkModeActive={selectedRequests.length > 0}
+                />
+              ))}
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </div>
 
         {/* Modals */}
         {selectedRequest && (
