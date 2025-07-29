@@ -1,12 +1,16 @@
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Search, Calendar as CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface SearchAndFiltersProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  dateFilter: string;
-  onDateFilterChange: (filter: string) => void;
+  dateFilter: Date | undefined;
+  onDateFilterChange: (date: Date | undefined) => void;
 }
 
 export const SearchAndFilters = ({
@@ -30,18 +34,29 @@ export const SearchAndFilters = ({
 
       {/* Date Filter */}
       <div className="w-full sm:w-48">
-        <Select value={dateFilter} onValueChange={onDateFilterChange}>
-          <SelectTrigger>
-            <Filter className="h-4 w-4 mr-2" />
-            <SelectValue placeholder="Filter by date" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Requests</SelectItem>
-            <SelectItem value="today">Today</SelectItem>
-            <SelectItem value="week">This Week</SelectItem>
-            <SelectItem value="month">This Month</SelectItem>
-          </SelectContent>
-        </Select>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full justify-start text-left font-normal",
+                !dateFilter && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {dateFilter ? format(dateFilter, "PPP") : <span>Filter by date</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={dateFilter}
+              onSelect={onDateFilterChange}
+              initialFocus
+              className={cn("p-3 pointer-events-auto")}
+            />
+          </PopoverContent>
+        </Popover>
       </div>
     </div>
   );

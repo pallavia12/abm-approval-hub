@@ -147,12 +147,6 @@ export const RequestCard = ({
           <div className="text-sm text-muted-foreground">{request.contactNumber}</div>
         </div>
 
-        {/* Request Date */}
-        <div>
-          <h4 className="font-medium text-sm text-muted-foreground mb-1">Requested Date</h4>
-          <div className="text-sm">{new Date(request.createdAt || new Date()).toLocaleDateString()}</div>
-        </div>
-
         {/* Campaign & Order Info */}
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -186,11 +180,17 @@ export const RequestCard = ({
           </div>
         )}
 
-        {/* Requested By */}
-        <div>
-          <h4 className="font-medium text-sm text-muted-foreground mb-1">Requested By</h4>
-          <div className="text-sm">{request.requestedBy}</div>
-          <div className="text-xs text-muted-foreground">{request.requestedByContact}</div>
+        {/* Requested By and Date */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <h4 className="font-medium text-sm text-muted-foreground mb-1">Requested By</h4>
+            <div className="text-sm">{request.requestedBy}</div>
+            <div className="text-xs text-muted-foreground">{request.requestedByContact}</div>
+          </div>
+          <div>
+            <h4 className="font-medium text-sm text-muted-foreground mb-1">Requested Date</h4>
+            <div className="text-sm">{new Date(request.createdAt || new Date()).toLocaleDateString()}</div>
+          </div>
         </div>
 
         {/* Action Buttons */}

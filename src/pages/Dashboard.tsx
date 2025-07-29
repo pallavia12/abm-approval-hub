@@ -86,7 +86,7 @@ const Dashboard = () => {
   const [selectedRequest, setSelectedRequest] = useState<ApprovalRequest | null>(null);
   const [selectedRequests, setSelectedRequests] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [dateFilter, setDateFilter] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { executeAction, executeBulkAction, isActionDisabled, getActionTaken } = useActionHandler();
@@ -205,25 +205,10 @@ const Dashboard = () => {
 
     if (!matchesSearch) return false;
 
-    if (dateFilter === "all") return true;
+    if (!dateFilter) return true;
     
     const requestDate = new Date(request.createdAt || "2024-01-15");
-    const today = new Date();
-    
-    switch (dateFilter) {
-      case "today":
-        return requestDate.toDateString() === today.toDateString();
-      case "week":
-        const weekAgo = new Date(today);
-        weekAgo.setDate(today.getDate() - 7);
-        return requestDate >= weekAgo;
-      case "month":
-        const monthAgo = new Date(today);
-        monthAgo.setMonth(today.getMonth() - 1);
-        return requestDate >= monthAgo;
-      default:
-        return true;
-    }
+    return requestDate.toDateString() === dateFilter.toDateString();
   });
 
   return (
