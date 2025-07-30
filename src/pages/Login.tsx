@@ -27,12 +27,11 @@ const Login = () => {
     
     try {
       // Validate username with webhook
-      const response = await fetch("https://ninjasndanalytics.app.n8n.cloud/webhook-test/check-abm-user", {
+      const response = await fetch(`https://ninjasndanalytics.app.n8n.cloud/webhook-test/check-abm-user?username=${encodeURIComponent(username.trim())}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username: username.trim() }),
       });
 
       if (!response.ok) {
