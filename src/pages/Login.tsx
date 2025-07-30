@@ -28,7 +28,7 @@ const Login = () => {
     try {
       // Validate username with webhook
       const response = await fetch("https://ninjasndanalytics.app.n8n.cloud/webhook-test/check-abm-user", {
-        method: "POST",
+        method: "GET",
         headers: {
           "Content-Type": "application/json",
         },
