@@ -40,7 +40,7 @@ const Login = () => {
 
       const result = await response.json();
       
-      if (result.valid || result.isValid) {
+      if (result.status === "success") {
         localStorage.setItem("asgard_username", username);
         toast({
           title: "Success",
