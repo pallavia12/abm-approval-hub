@@ -25,16 +25,45 @@ const Login = () => {
 
     setIsLoading(true);
     
-    // Simulate login process
-    setTimeout(() => {
-      localStorage.setItem("asgard_username", username);
-      toast({
-        title: "Success",
-        description: "Logged in successfully",
+    try {
+      // Validate username with webhook
+      const response = await fetch("https://ninjasndanalytics.app.n8n.cloud/webhook-test/check-abm-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username: username.trim() }),
       });
-      navigate("/dashboard");
+
+      if (!response.ok) {
+        throw new Error("Failed to validate username");
+      }
+
+      const result = await response.json();
+      
+      if (result.valid || result.isValid) {
+        localStorage.setItem("asgard_username", username);
+        toast({
+          title: "Success",
+          description: "Logged in successfully",
+        });
+        navigate("/dashboard");
+      } else {
+        toast({
+          title: "Invalid Username",
+          description: "The username is not valid or not found in the system",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Validation Error",
+        description: "Unable to validate username. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
