@@ -80,7 +80,7 @@ const Dashboard = () => {
         console.log(`Attempting to fetch data (attempt ${attempt}/${MAX_RETRIES + 1})`);
         console.log("API URL:", getApiUrl());
         
-        const response = await fetch(getApiUrl(), {
+        const response = await fetch(`http://localhost:5678/webhook-test/fetch-requests`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
