@@ -274,9 +274,9 @@ const Dashboard = () => {
   // Filter requests based on search and date filter
   const filteredRequests = requests.filter(request => {
     const matchesSearch = 
-      request.customerId.toString().includes(searchQuery.toLowerCase()) ||
-      request.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      request.requestedByUserName.toLowerCase().includes(searchQuery.toLowerCase());
+      (request.customerId?.toString() || '').includes(searchQuery.toLowerCase()) ||
+      (request.customerName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (request.requestedByUserName || '').toLowerCase().includes(searchQuery.toLowerCase());
 
     if (!matchesSearch) return false;
 
