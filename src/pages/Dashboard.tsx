@@ -38,10 +38,6 @@ const getApiUrl = () => {
   return import.meta.env.VITE_API_URL || "http://localhost:5678/webhook-test/fetch-requests";
 };
 
-// Retry configuration
-const MAX_RETRIES = 2;
-const RETRY_DELAY = 1000; // 1 second
-
 const Dashboard = () => {
   const [requests, setRequests] = useState<ApprovalRequest[]>([]);
   const [username, setUsername] = useState<string>("");
@@ -55,7 +51,7 @@ const Dashboard = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
+  
   const [debugData, setDebugData] = useState<any>(null);
   const [showDebug, setShowDebug] = useState(false);
   const requestsPerPage = 10;
@@ -71,13 +67,14 @@ const Dashboard = () => {
     }
     setUsername(asgardUsername);
     
-    // Fetch requests from the API with retry logic
-    const fetchRequests = async (attempt = 1) => {
+    // Fetch requests from the API
+    const fetchRequests = async () => {
+      console.log(`[Dashboard.tsx:72] Starting fetch request for user: ${asgardUsername}`);
       setIsLoading(true);
       setError(null);
       
       try {
-              
+        console.log(`[Dashboard.tsx:77] Making POST request to webhook endpoint`);
         const response = await fetch(`http://localhost:5678/webhook-test/fetch-requests`, {
           method: "POST",
           headers: {
@@ -88,12 +85,28 @@ const Dashboard = () => {
           }),
         });
         
+        console.log(`[Dashboard.tsx:87] Received response with status: ${response.status} ${response.statusText}`);
+        
         if (!response.ok) {
-          throw new Error(`HTTP error`);//! status: ${response.status} - ${response.statusText}`);
+          const errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          console.error(`[Dashboard.tsx:90] Request failed - ${errorMessage}`);
+          throw new Error(errorMessage);
         }
         
-        const data = await response.json();
-        console.log("Successfully fetched data:", data);
+        let data;
+        try {
+          console.log(`[Dashboard.tsx:96] Attempting to parse JSON response`);
+          data = await response.json();
+          console.log(`[Dashboard.tsx:98] Successfully parsed JSON data:`, data);
+        } catch (jsonError) {
+          console.error(`[Dashboard.tsx:100] JSON parsing failed:`, {
+            error: jsonError,
+            message: jsonError instanceof Error ? jsonError.message : 'Unknown JSON parsing error',
+            responseStatus: response.status,
+            responseHeaders: Object.fromEntries(response.headers.entries())
+          });
+          throw new Error(`Failed to parse server response as JSON: ${jsonError instanceof Error ? jsonError.message : 'Unknown error'}`);
+        }
         
         // Store debug data
         setDebugData(data);
@@ -123,14 +136,21 @@ const Dashboard = () => {
           }
         }
         
+        console.log(`[Dashboard.tsx:139] Successfully processed ${processedRequests.length} requests from API response`);
         setRequests(processedRequests);
         setError(null);
-        setRetryCount(0);
       } catch (error) {
-        console.error(`Error fetching requests`);// (attempt ${attempt}):`, error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        console.error(`[Dashboard.tsx:143] Failed to fetch approval requests:`, {
+          error: error,
+          message: errorMessage,
+          timestamp: new Date().toISOString(),
+          username: asgardUsername
+        });
+        setError(errorMessage);
         toast({
             title: "Failed to fetch data",
-            description: `Unable to load approval requests. Please check your connection and try again.`,
+            description: `Unable to load approval requests: ${errorMessage}`,
             variant: "destructive"
           });
         
@@ -342,11 +362,6 @@ const Dashboard = () => {
               Approval Requests ({totalFilteredRequests})
             </h2>
             <div className="flex gap-2">
-              {retryCount > 0 && (
-                <div className="text-sm text-muted-foreground">
-                  Retrying...
-                </div>
-              )}
               <Button
                 variant="outline"
                 size="sm"
