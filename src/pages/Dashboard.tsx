@@ -54,7 +54,7 @@ const Dashboard = () => {
   const [selectedRequest, setSelectedRequest] = useState<ApprovalRequest | null>(null);
   const [selectedRequests, setSelectedRequests] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [selectedSeUser, setSelectedSeUser] = useState<string>("");
+  const [selectedSeUser, setSelectedSeUser] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -305,7 +305,7 @@ const Dashboard = () => {
 
     if (!matchesSearch) return false;
 
-    if (!selectedSeUser) return true;
+    if (selectedSeUser === "all" || !selectedSeUser) return true;
     
     // Filter by SE user - match against the request's SE user from seUsers data
     const matchingSeUser = seUsers.find(se => se.ABM_Id === request.ABM_Id);

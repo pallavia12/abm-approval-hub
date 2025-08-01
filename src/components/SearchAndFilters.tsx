@@ -37,7 +37,7 @@ export const SearchAndFilters = ({
             <SelectValue placeholder="Filter by SE User" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All SE Users</SelectItem>
+            <SelectItem value="all">All SE Users</SelectItem>
             {seUsers.map((user) => (
               <SelectItem key={user.SE_UserName} value={user.SE_UserName}>
                 {user.SE_UserName}
