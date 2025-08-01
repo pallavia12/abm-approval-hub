@@ -130,7 +130,14 @@ const Dashboard = () => {
         setRetryCount(0);
       } catch (error) {
         console.error(`Error fetching requests (attempt ${attempt}):`, error);
+
+        toast({
+            title: "Failed to fetch data",
+            description: `Unable to load approval requests. Please check your connection and try again.`,
+            variant: "destructive",
+          });
         
+        /*
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         
         if (attempt <= MAX_RETRIES) {
@@ -149,6 +156,7 @@ const Dashboard = () => {
             variant: "destructive",
           });
         }
+        */
       } finally {
         setIsLoading(false);
       }
