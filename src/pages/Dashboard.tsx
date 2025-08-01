@@ -39,7 +39,7 @@ const getApiUrl = () => {
 };
 
 // Retry configuration
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 2;
 const RETRY_DELAY = 1000; // 1 second
 
 const Dashboard = () => {
@@ -56,6 +56,8 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [debugData, setDebugData] = useState<any>(null);
+  const [showDebug, setShowDebug] = useState(false);
   const requestsPerPage = 10;
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -94,7 +96,36 @@ const Dashboard = () => {
         
         const data = await response.json();
         console.log("Successfully fetched data:", data);
-        setRequests(Array.isArray(data) ? data : []);
+        
+        // Store debug data
+        setDebugData(data);
+        
+        // Handle multiple JSON structures
+        let processedRequests: ApprovalRequest[] = [];
+        
+        if (Array.isArray(data)) {
+          processedRequests = data;
+        } else if (data && typeof data === 'object') {
+          // Check for common wrapper properties
+          if (data.requests && Array.isArray(data.requests)) {
+            processedRequests = data.requests;
+          } else if (data.data && Array.isArray(data.data)) {
+            processedRequests = data.data;
+          } else if (data.results && Array.isArray(data.results)) {
+            processedRequests = data.results;
+          } else if (data.items && Array.isArray(data.items)) {
+            processedRequests = data.items;
+          } else {
+            // If it's an object but not a known wrapper, try to extract array values
+            const values = Object.values(data);
+            const arrayValue = values.find(value => Array.isArray(value));
+            if (arrayValue) {
+              processedRequests = arrayValue as ApprovalRequest[];
+            }
+          }
+        }
+        
+        setRequests(processedRequests);
         setError(null);
         setRetryCount(0);
       } catch (error) {
@@ -111,6 +142,7 @@ const Dashboard = () => {
         } else {
           setError(`Failed to fetch data after ${MAX_RETRIES + 1} attempts: ${errorMessage}`);
           setRequests([]);
+          setDebugData({ error: errorMessage, attempts: MAX_RETRIES + 1 });
           toast({
             title: "Failed to fetch data",
             description: `Unable to load approval requests. Please check your connection and try again.`,
@@ -284,6 +316,22 @@ const Dashboard = () => {
           </Button>
         </div>
 
+        {/* Debug Section */}
+        {showDebug && debugData && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Debug Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-muted p-4 rounded-md overflow-auto max-h-60">
+                <pre className="text-sm">
+                  {JSON.stringify(debugData, null, 2)}
+                </pre>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Search and Filters */}
         <SearchAndFilters
           searchQuery={searchQuery}
@@ -308,11 +356,20 @@ const Dashboard = () => {
             <h2 className="text-lg font-semibold">
               Approval Requests ({totalFilteredRequests})
             </h2>
-            {retryCount > 0 && (
-              <div className="text-sm text-muted-foreground">
-                Retrying... (attempt {retryCount + 1}/{MAX_RETRIES + 1})
-              </div>
-            )}
+            <div className="flex gap-2">
+              {retryCount > 0 && (
+                <div className="text-sm text-muted-foreground">
+                  Retrying...
+                </div>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDebug(!showDebug)}
+              >
+                {showDebug ? "Hide" : "Show"} Debug
+              </Button>
+            </div>
           </div>
           
           {isLoading ? (
