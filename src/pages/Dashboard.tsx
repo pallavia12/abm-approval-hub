@@ -77,8 +77,8 @@ const Dashboard = () => {
       setError(null);
       
       try {
-        console.log(`Attempting to fetch data (attempt ${attempt}/${MAX_RETRIES + 1})`);
-        console.log("API URL:", getApiUrl());
+        //console.log(`Attempting to fetch data (attempt ${attempt}/${MAX_RETRIES + 1})`);
+        //console.log("API URL:", getApiUrl());
         
         const response = await fetch(`http://localhost:5678/webhook-test/fetch-requests`, {
           method: "POST",
@@ -130,14 +130,7 @@ const Dashboard = () => {
         setRetryCount(0);
       } catch (error) {
         console.error(`Error fetching requests (attempt ${attempt}):`, error);
-
-        toast({
-            title: "Failed to fetch data",
-            description: `Unable to load approval requests. Please check your connection and try again.`,
-            variant: "destructive",
-          });
         
-        /*
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         
         if (attempt <= MAX_RETRIES) {
@@ -156,7 +149,6 @@ const Dashboard = () => {
             variant: "destructive",
           });
         }
-        */
       } finally {
         setIsLoading(false);
       }
