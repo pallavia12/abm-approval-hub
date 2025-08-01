@@ -77,14 +77,11 @@ const Dashboard = () => {
       setError(null);
       
       try {
-        //console.log(`Attempting to fetch data (attempt ${attempt}/${MAX_RETRIES + 1})`);
-        //console.log("API URL:", getApiUrl());
-        
+              
         const response = await fetch(`http://localhost:5678/webhook-test/fetch-requests`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Accept": "application/json",
           },
           body: JSON.stringify({
             username: asgardUsername,
@@ -92,22 +89,10 @@ const Dashboard = () => {
         });
         
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+          throw new Error(`HTTP error`);//! status: ${response.status} - ${response.statusText}`);
         }
         
-        let data;
-        try {
-          data = await response.json();
-        } catch (jsonError) {
-          console.error("JSON parsing error:", jsonError);
-          console.error("Response text might be:", await response.clone().text());
-          toast({
-            title: "JSON Parsing Error",
-            description: "Server returned invalid JSON response",
-            variant: "destructive",
-          });
-          throw new Error("Invalid JSON response from server");
-        }
+        const data = await response.json();
         console.log("Successfully fetched data:", data);
         
         // Store debug data
@@ -142,34 +127,13 @@ const Dashboard = () => {
         setError(null);
         setRetryCount(0);
       } catch (error) {
-        console.error(`Error fetching requests (attempt ${attempt}):`, error);
-
+        console.error(`Error fetching requests`);// (attempt ${attempt}):`, error);
         toast({
             title: "Failed to fetch data",
             description: `Unable to load approval requests. Please check your connection and try again.`,
             variant: "destructive"
           });
         
-        /*
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        
-        if (attempt <= MAX_RETRIES) {
-          console.log(`Retrying in ${RETRY_DELAY}ms...`);
-          setTimeout(() => {
-            setRetryCount(attempt);
-            fetchRequests(attempt + 1);
-          }, RETRY_DELAY * attempt); // Exponential backoff
-        } else {
-          setError(`Failed to fetch data after ${MAX_RETRIES + 1} attempts: ${errorMessage}`);
-          setRequests([]);
-          setDebugData({ error: errorMessage, attempts: MAX_RETRIES + 1 });
-          toast({
-            title: "Failed to fetch data",
-            description: `Unable to load approval requests. Please check your connection and try again.`,
-            variant: "destructive",
-          });
-        }
-        */
       } finally {
         setIsLoading(false);
       }
