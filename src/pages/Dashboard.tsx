@@ -111,29 +111,13 @@ const Dashboard = () => {
         // Store debug data
         setDebugData(data);
         
-        // Handle multiple JSON structures
+        // Handle single JSON response format - expecting direct array of requests
         let processedRequests: ApprovalRequest[] = [];
-        
         if (Array.isArray(data)) {
           processedRequests = data;
-        } else if (data && typeof data === 'object') {
-          // Check for common wrapper properties
-          if (data.requests && Array.isArray(data.requests)) {
-            processedRequests = data.requests;
-          } else if (data.data && Array.isArray(data.data)) {
-            processedRequests = data.data;
-          } else if (data.results && Array.isArray(data.results)) {
-            processedRequests = data.results;
-          } else if (data.items && Array.isArray(data.items)) {
-            processedRequests = data.items;
-          } else {
-            // If it's an object but not a known wrapper, try to extract array values
-            const values = Object.values(data);
-            const arrayValue = values.find(value => Array.isArray(value));
-            if (arrayValue) {
-              processedRequests = arrayValue as ApprovalRequest[];
-            }
-          }
+        } else {
+          console.error("Expected array of requests, received:", typeof data, data);
+          throw new Error("Invalid response format: expected array of approval requests");
         }
         
         console.log(`[Dashboard.tsx:139] Successfully processed ${processedRequests.length} requests from API response`);
