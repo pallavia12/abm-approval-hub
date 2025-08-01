@@ -98,7 +98,36 @@ const Dashboard = () => {
       return;
     }
     setUsername(asgardUsername);
-    setRequests(mockData);
+    
+    // Fetch requests from the API
+    const fetchRequests = async () => {
+      try {
+        const response = await fetch("http://localhost:5678/webhook-test/fetch-requests", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: asgardUsername,
+          }),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setRequests(data);
+        } else {
+          console.error("Failed to fetch requests:", response.statusText);
+          // Fallback to mock data if API fails
+          setRequests(mockData);
+        }
+      } catch (error) {
+        console.error("Error fetching requests:", error);
+        // Fallback to mock data if API fails
+        setRequests(mockData);
+      }
+    };
+    
+    fetchRequests();
   }, [navigate]);
 
   const handleLogout = () => {
