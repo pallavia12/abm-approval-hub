@@ -218,7 +218,7 @@ const Dashboard = () => {
 
   // Bulk action handlers
   const handleSelectAll = () => {
-    const eligibleRequests = paginatedRequests.filter(r => !isActionDisabled(r.requestId.toString()));
+    const eligibleRequests = paginatedRequests.filter(r => r?.requestId && !isActionDisabled(r.requestId.toString()));
     setSelectedRequests(eligibleRequests.map(r => r.requestId));
   };
 
@@ -345,7 +345,7 @@ const Dashboard = () => {
         {/* Bulk Action Bar */}
         <BulkActionBar
           selectedRequests={selectedRequests.map(id => id.toString())}
-          totalRequests={paginatedRequests.filter(r => !isActionDisabled(r.requestId.toString())).length}
+          totalRequests={paginatedRequests.filter(r => r?.requestId && !isActionDisabled(r.requestId.toString())).length}
           onSelectAll={handleSelectAll}
           onDeselectAll={handleDeselectAll}
           onBulkAccept={handleBulkAccept}
