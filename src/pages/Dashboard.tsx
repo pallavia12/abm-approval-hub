@@ -405,17 +405,19 @@ const Dashboard = () => {
           ) : (
             <div className="grid gap-4">
               {paginatedRequests.map((request) => (
-                <RequestCard
-                  key={request.requestId}
-                  request={request}
-                  isSelected={selectedRequests.includes(request.requestId)}
-                  isDisabled={isActionDisabled(request.requestId.toString())}
-                  onSelectionChange={handleCheckboxChange}
-                  onAction={handleAction}
-                  actionTaken={getActionTaken(request.requestId.toString())}
-                  bulkModeActive={selectedRequests.length > 0}
-                />
-              ))}
+                request?.requestId ? (
+                  <RequestCard
+                    key={request.requestId}
+                    request={request}
+                    isSelected={selectedRequests.includes(request.requestId)}
+                    isDisabled={isActionDisabled(request.requestId.toString())}
+                    onSelectionChange={handleCheckboxChange}
+                    onAction={handleAction}
+                    actionTaken={getActionTaken(request.requestId.toString())}
+                    bulkModeActive={selectedRequests.length > 0}
+                  />
+                ) : null
+              )).filter(Boolean)}
             </div>
           )}
 
