@@ -34,10 +34,8 @@ interface ApprovalRequest {
 
 // API Configuration
 const getApiUrl = () => {
-  // For production/deployed environments, use a public API endpoint
-  // For local development, you can set this environment variable
-  const apiUrl = import.meta.env.VITE_API_URL || "https://your-deployed-api.com/api";
-  return `${apiUrl}/fetch-requests`;
+  // Use the actual webhook URL you specified
+  return import.meta.env.VITE_API_URL || "http://localhost:5678/webhook-test/fetch-requests";
 };
 
 // Retry configuration
