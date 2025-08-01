@@ -93,19 +93,32 @@ const Dashboard = () => {
           throw new Error(errorMessage);
         }
         
+        // Get response as text first
+        let responseText: string;
+        try {
+          console.log(`[Dashboard.tsx:98] Getting response as text`);
+          responseText = await response.text();
+          console.log(`[Dashboard.tsx:100] Raw response text:`, responseText);
+        } catch (textError) {
+          console.error(`[Dashboard.tsx:102] Failed to get response text:`, textError);
+          throw new Error(`Failed to read server response: ${textError instanceof Error ? textError.message : 'Unknown error'}`);
+        }
+
+        // Parse the text as JSON
         let data;
         try {
-          console.log(`[Dashboard.tsx:96] Attempting to parse JSON response`);
-          data = await response.json();
-          console.log(`[Dashboard.tsx:98] Successfully parsed JSON data:`, data);
+          console.log(`[Dashboard.tsx:109] Attempting to parse JSON from response text`);
+          data = JSON.parse(responseText);
+          console.log(`[Dashboard.tsx:111] Successfully parsed JSON data:`, data);
         } catch (jsonError) {
-          console.error(`[Dashboard.tsx:100] JSON parsing failed:`, {
+          console.error(`[Dashboard.tsx:113] JSON parsing failed:`, {
             error: jsonError,
             message: jsonError instanceof Error ? jsonError.message : 'Unknown JSON parsing error',
             responseStatus: response.status,
-            responseHeaders: Object.fromEntries(response.headers.entries())
+            responseHeaders: Object.fromEntries(response.headers.entries()),
+            rawResponseText: responseText
           });
-          throw new Error(`Failed to parse server response as JSON: ${jsonError instanceof Error ? jsonError.message : 'Unknown error'}`);
+          throw new Error(`Failed to parse server response as JSON: ${jsonError instanceof Error ? jsonError.message : 'Unknown error'}. Raw response: "${responseText}"`);
         }
         
         // Store debug data
