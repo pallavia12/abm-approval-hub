@@ -95,7 +95,19 @@ const Dashboard = () => {
           throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
         }
         
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          console.error("JSON parsing error:", jsonError);
+          console.error("Response text might be:", await response.clone().text());
+          toast({
+            title: "JSON Parsing Error",
+            description: "Server returned invalid JSON response",
+            variant: "destructive",
+          });
+          throw new Error("Invalid JSON response from server");
+        }
         console.log("Successfully fetched data:", data);
         
         // Store debug data
