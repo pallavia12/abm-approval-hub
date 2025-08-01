@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut } from "lucide-react";
+import { LogOut, Loader2 } from "lucide-react";
 import ModifyRequestModal, { ModifyData } from "@/components/ModifyRequestModal";
 import EscalateRequestModal from "@/components/EscalateRequestModal";
 import { BulkActionBar } from "@/components/BulkActionBar";
@@ -32,45 +32,17 @@ interface ApprovalRequest {
   createdAt: string;
 }
 
-// Mock data
-const mockData: ApprovalRequest[] = [
-  {
-    requestId: 1,
-    eligible: 1,
-    customerId: 12345,
-    customerName: "John Doe Enterprises",
-    customerContact: 9876543210,
-    campaignType: "Volume Discount",
-    skuId: 100,
-    orderQty: 500,
-    discountValue: 15,
-    discountType: "Percentage",
-    reason: "Bulk order commitment",
-    requestedBy: 123,
-    requestedByUserName: "SalesRepA",
-    requestedByContact: "9876543211",
-    ABM_Id: 456,
-    ABM_UserName: "ABM_User1",
-    createdAt: "2024-01-15 10:30:00",
-  },
-  {
-    requestId: 2,
-    eligible: 0,
-    customerId: 67890,
-    customerName: "ABC Manufacturing",
-    customerContact: 9876543212,
-    campaignType: "New Customer",
-    orderQty: 250,
-    discountValue: 5000,
-    discountType: "Fixed Amount",
-    requestedBy: 124,
-    requestedByUserName: "SalesRepB",
-    requestedByContact: "9876543213",
-    ABM_Id: 456,
-    ABM_UserName: "ABM_User1",
-    createdAt: "2024-01-14 14:15:00",
-  },
-];
+// API Configuration
+const getApiUrl = () => {
+  // For production/deployed environments, use a public API endpoint
+  // For local development, you can set this environment variable
+  const apiUrl = import.meta.env.VITE_API_URL || "https://your-deployed-api.com/api";
+  return `${apiUrl}/fetch-requests`;
+};
+
+// Retry configuration
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
 
 const Dashboard = () => {
   const [requests, setRequests] = useState<ApprovalRequest[]>([]);
@@ -83,6 +55,9 @@ const Dashboard = () => {
   const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const requestsPerPage = 10;
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -96,10 +71,16 @@ const Dashboard = () => {
     }
     setUsername(asgardUsername);
     
-    // Fetch requests from the API
-    const fetchRequests = async () => {
+    // Fetch requests from the API with retry logic
+    const fetchRequests = async (attempt = 1) => {
+      setIsLoading(true);
+      setError(null);
+      
       try {
-        const response = await fetch("http://localhost:5678/webhook-test/fetch-requests", {
+        console.log(`Attempting to fetch data (attempt ${attempt}/${MAX_RETRIES + 1})`);
+        console.log("API URL:", getApiUrl());
+        
+        const response = await fetch(getApiUrl(), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -109,23 +90,42 @@ const Dashboard = () => {
           }),
         });
         
-        if (response.ok) {
-          const data = await response.json();
-          setRequests(data);
-        } else {
-          console.error("Failed to fetch requests:", response.statusText);
-          // Fallback to mock data if API fails
-          setRequests(mockData);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
         }
+        
+        const data = await response.json();
+        console.log("Successfully fetched data:", data);
+        setRequests(Array.isArray(data) ? data : []);
+        setError(null);
+        setRetryCount(0);
       } catch (error) {
-        console.error("Error fetching requests:", error);
-        // Fallback to mock data if API fails
-        setRequests(mockData);
+        console.error(`Error fetching requests (attempt ${attempt}):`, error);
+        
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        
+        if (attempt <= MAX_RETRIES) {
+          console.log(`Retrying in ${RETRY_DELAY}ms...`);
+          setTimeout(() => {
+            setRetryCount(attempt);
+            fetchRequests(attempt + 1);
+          }, RETRY_DELAY * attempt); // Exponential backoff
+        } else {
+          setError(`Failed to fetch data after ${MAX_RETRIES + 1} attempts: ${errorMessage}`);
+          setRequests([]);
+          toast({
+            title: "Failed to fetch data",
+            description: `Unable to load approval requests. Please check your connection and try again.`,
+            variant: "destructive",
+          });
+        }
+      } finally {
+        setIsLoading(false);
       }
     };
     
     fetchRequests();
-  }, [navigate]);
+  }, [navigate, toast]);
 
   const handleLogout = () => {
     localStorage.removeItem("asgard_username");
@@ -310,12 +310,44 @@ const Dashboard = () => {
             <h2 className="text-lg font-semibold">
               Approval Requests ({totalFilteredRequests})
             </h2>
+            {retryCount > 0 && (
+              <div className="text-sm text-muted-foreground">
+                Retrying... (attempt {retryCount + 1}/{MAX_RETRIES + 1})
+              </div>
+            )}
           </div>
           
-          {paginatedRequests.length === 0 ? (
+          {isLoading ? (
             <Card>
               <CardContent className="p-8 text-center">
-                <p className="text-muted-foreground">No requests found matching your criteria.</p>
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <p className="text-muted-foreground">Loading approval requests...</p>
+              </CardContent>
+            </Card>
+          ) : error ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <div className="text-destructive mb-4">
+                  <p className="font-medium">Failed to load requests</p>
+                  <p className="text-sm mt-2">{error}</p>
+                </div>
+                <Button 
+                  onClick={() => window.location.reload()} 
+                  variant="outline"
+                >
+                  Try Again
+                </Button>
+              </CardContent>
+            </Card>
+          ) : paginatedRequests.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <p className="text-muted-foreground">
+                  {requests.length === 0 
+                    ? "No approval requests available." 
+                    : "No requests found matching your criteria."
+                  }
+                </p>
               </CardContent>
             </Card>
           ) : (
@@ -336,11 +368,13 @@ const Dashboard = () => {
           )}
 
           {/* Pagination */}
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
+          {!isLoading && !error && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          )}
         </div>
 
         {/* Modals */}
