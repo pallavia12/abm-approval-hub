@@ -32,6 +32,13 @@ interface ApprovalRequest {
   createdAt: string;
 }
 
+interface SEUser {
+  SE_Id: number;
+  SE_UserName: string;
+  ABM_Id: number;
+  ABM_UserName: string;
+}
+
 // API Configuration
 const getApiUrl = () => {
   // Use the actual webhook URL you specified
@@ -40,13 +47,14 @@ const getApiUrl = () => {
 
 const Dashboard = () => {
   const [requests, setRequests] = useState<ApprovalRequest[]>([]);
+  const [seUsers, setSeUsers] = useState<SEUser[]>([]);
   const [username, setUsername] = useState<string>("");
   const [modifyModalOpen, setModifyModalOpen] = useState(false);
   const [escalateModalOpen, setEscalateModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<ApprovalRequest | null>(null);
   const [selectedRequests, setSelectedRequests] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
+  const [selectedSeUser, setSelectedSeUser] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -124,24 +132,34 @@ const Dashboard = () => {
         // Store debug data
         setDebugData(data);
         
-        // Handle nested JSON response format - extract data from nested 'json' property
+        // Handle mixed response format - extract both ApprovalRequest and SEUser data
         let processedRequests: ApprovalRequest[] = [];
+        let processedSeUsers: SEUser[] = [];
+        
         if (Array.isArray(data)) {
-          processedRequests = data.map(item => {
-            // Extract the actual request data from the nested 'json' property
+          data.forEach(item => {
             if (item && item.json) {
-              return item.json as ApprovalRequest;
+              // This is an ApprovalRequest with nested json structure
+              const requestData = item.json;
+              if (requestData.requestId !== undefined) {
+                processedRequests.push(requestData as ApprovalRequest);
+              }
+            } else if (item && item.SE_Id !== undefined) {
+              // This is a direct SEUser object
+              processedSeUsers.push(item as SEUser);
+            } else if (item && item.requestId !== undefined) {
+              // This is a direct ApprovalRequest object
+              processedRequests.push(item as ApprovalRequest);
             }
-            // Fallback for items that might not have nested structure
-            return item as ApprovalRequest;
-          }).filter(Boolean); // Remove any null/undefined items
+          });
         } else {
           console.error("Expected array of requests, received:", typeof data, data);
-          throw new Error("Invalid response format: expected array of approval requests");
+          throw new Error("Invalid response format: expected array of data");
         }
         
-        console.log(`[Dashboard.tsx:139] Successfully processed ${processedRequests.length} requests from API response`);
+        console.log(`[Dashboard.tsx:149] Successfully processed ${processedRequests.length} requests and ${processedSeUsers.length} SE users from API response`);
         setRequests(processedRequests);
+        setSeUsers(processedSeUsers);
         setError(null);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -278,7 +296,7 @@ const Dashboard = () => {
     }
   };
 
-  // Filter requests based on search and date filter
+  // Filter requests based on search and SE user filter
   const filteredRequests = requests.filter(request => {
     const matchesSearch = 
       (request.customerId?.toString() || '').includes(searchQuery.toLowerCase()) ||
@@ -287,10 +305,11 @@ const Dashboard = () => {
 
     if (!matchesSearch) return false;
 
-    if (!dateFilter) return true;
+    if (!selectedSeUser) return true;
     
-    const requestDate = new Date(request.createdAt);
-    return requestDate.toDateString() === dateFilter.toDateString();
+    // Filter by SE user - match against the request's SE user from seUsers data
+    const matchingSeUser = seUsers.find(se => se.ABM_Id === request.ABM_Id);
+    return matchingSeUser?.SE_UserName === selectedSeUser;
   });
 
   // Calculate pagination
@@ -345,8 +364,9 @@ const Dashboard = () => {
         <SearchAndFilters
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          dateFilter={dateFilter}
-          onDateFilterChange={setDateFilter}
+          seUsers={seUsers}
+          selectedSeUser={selectedSeUser}
+          onSeUserChange={setSelectedSeUser}
         />
 
         {/* Bulk Action Bar */}
