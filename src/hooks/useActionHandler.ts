@@ -6,6 +6,8 @@ export interface ActionResult {
   action: 'Accept' | 'Reject' | 'Modify' | 'Escalate';
   timestamp: string;
   disabled: boolean;
+  tatTime?: string;
+  createdAt?: string;
 }
 
 export const useActionHandler = () => {
@@ -33,6 +35,17 @@ export const useActionHandler = () => {
     }
   };
 
+  const calculateTAT = (createdAt: string, actionTimestamp: string): string => {
+    const createdDate = new Date(createdAt);
+    const actionDate = new Date(actionTimestamp);
+    
+    const diffMs = actionDate.getTime() - createdDate.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return `${diffHours} hours, ${diffMins} mins`;
+  };
+
   const executeAction = async (requestId: string, action: 'Accept' | 'Reject' | 'Modify' | 'Escalate', additionalData?: any) => {
     const timestamp = new Date().toISOString();
     
@@ -46,13 +59,18 @@ export const useActionHandler = () => {
     const result = await sendToN8n(actionData);
     
     if (result.success) {
+      const createdAt = additionalData?.createdAt;
+      const tatTime = createdAt ? calculateTAT(createdAt, timestamp) : undefined;
+      
       setActionResults(prev => ({
         ...prev,
         [requestId]: {
           requestId,
           action,
           timestamp,
-          disabled: true
+          disabled: true,
+          tatTime,
+          createdAt
         }
       }));
 
@@ -71,14 +89,15 @@ export const useActionHandler = () => {
     return result;
   };
 
-  const executeBulkAction = async (requestIds: string[], action: 'Accept' | 'Reject') => {
+  const executeBulkAction = async (requestIds: string[], action: 'Accept' | 'Reject', additionalData?: any) => {
     const timestamp = new Date().toISOString();
     
     const bulkData = {
       requestIds,
       action,
       timestamp,
-      bulkAction: true
+      bulkAction: true,
+      ...additionalData
     };
 
     const result = await sendToN8n(bulkData);
@@ -86,11 +105,16 @@ export const useActionHandler = () => {
     if (result.success) {
       const newResults: Record<string, ActionResult> = {};
       requestIds.forEach(requestId => {
+        const createdAt = additionalData?.createdAtMap?.[requestId];
+        const tatTime = createdAt ? calculateTAT(createdAt, timestamp) : undefined;
+        
         newResults[requestId] = {
           requestId,
           action,
           timestamp,
-          disabled: true
+          disabled: true,
+          tatTime,
+          createdAt
         };
       });
 

@@ -10,71 +10,65 @@ import { BulkActionBar } from "@/components/BulkActionBar";
 import { useActionHandler } from "@/hooks/useActionHandler";
 import { RequestCard } from "@/components/RequestCard";
 import { SearchAndFilters } from "@/components/SearchAndFilters";
+import { Pagination } from "@/components/Pagination";
 
 interface ApprovalRequest {
-  requestId: string;
-  customerId: string;
-  name: string;
-  contactNumber: string;
+  requestId: number;
+  eligible: 0 | 1;
+  customerId: number;
+  customerName: string;
+  customerContact: number;
   campaignType: string;
-  skuName?: string;
-  orderValue: number;
-  discountValue: number;
+  skuId?: number;
+  orderQty: number;
+  discountValue: number | null;
   discountType: string;
   reason?: string;
-  requestedBy: string;
+  requestedBy: number;
+  requestedByUserName: string;
   requestedByContact: string;
-  eligibility: 0 | 1;
-  createdAt?: string;
+  ABM_Id: number;
+  ABM_UserName: string;
+  createdAt: string;
 }
 
 // Mock data
 const mockData: ApprovalRequest[] = [
   {
-    requestId: "REQ-001",
-    customerId: "CUST-12345",
-    name: "John Doe Enterprises",
-    contactNumber: "+91-9876543210",
+    requestId: 1,
+    eligible: 1,
+    customerId: 12345,
+    customerName: "John Doe Enterprises",
+    customerContact: 9876543210,
     campaignType: "Volume Discount",
-    skuName: "Premium Widget A",
-    orderValue: 500,
+    skuId: 100,
+    orderQty: 500,
     discountValue: 15,
     discountType: "Percentage",
     reason: "Bulk order commitment",
-    requestedBy: "Sales Rep A",
-    requestedByContact: "+91-9876543211",
-    eligibility: 1,
-    createdAt: "2024-01-15",
+    requestedBy: 123,
+    requestedByUserName: "SalesRepA",
+    requestedByContact: "9876543211",
+    ABM_Id: 456,
+    ABM_UserName: "ABM_User1",
+    createdAt: "2024-01-15 10:30:00",
   },
   {
-    requestId: "REQ-002",
-    customerId: "CUST-67890",
-    name: "ABC Manufacturing",
-    contactNumber: "+91-9876543212",
+    requestId: 2,
+    eligible: 0,
+    customerId: 67890,
+    customerName: "ABC Manufacturing",
+    customerContact: 9876543212,
     campaignType: "New Customer",
-    orderValue: 250,
+    orderQty: 250,
     discountValue: 5000,
     discountType: "Fixed Amount",
-    requestedBy: "Sales Rep B",
-    requestedByContact: "+91-9876543213",
-    eligibility: 0,
-    createdAt: "2024-01-14",
-  },
-  {
-    requestId: "REQ-003",
-    customerId: "CUST-11111",
-    name: "XYZ Corporation",
-    contactNumber: "+91-9876543214",
-    campaignType: "Loyalty Discount",
-    skuName: "Standard Widget B",
-    orderValue: 750,
-    discountValue: 20,
-    discountType: "Percentage",
-    reason: "Long-term partnership",
-    requestedBy: "Sales Rep C",
-    requestedByContact: "+91-9876543215",
-    eligibility: 1,
-    createdAt: "2024-01-13",
+    requestedBy: 124,
+    requestedByUserName: "SalesRepB",
+    requestedByContact: "9876543213",
+    ABM_Id: 456,
+    ABM_UserName: "ABM_User1",
+    createdAt: "2024-01-14 14:15:00",
   },
 ];
 
@@ -84,9 +78,12 @@ const Dashboard = () => {
   const [modifyModalOpen, setModifyModalOpen] = useState(false);
   const [escalateModalOpen, setEscalateModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<ApprovalRequest | null>(null);
-  const [selectedRequests, setSelectedRequests] = useState<string[]>([]);
+  const [selectedRequests, setSelectedRequests] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const requestsPerPage = 10;
   const navigate = useNavigate();
   const { toast } = useToast();
   const { executeAction, executeBulkAction, isActionDisabled, getActionTaken } = useActionHandler();
@@ -139,7 +136,7 @@ const Dashboard = () => {
     navigate("/");
   };
 
-  const handleAction = async (requestId: string, action: string) => {
+  const handleAction = async (requestId: number, action: string) => {
     if (action === "Modify") {
       const request = requests.find(r => r.requestId === requestId);
       if (request) {
@@ -158,7 +155,8 @@ const Dashboard = () => {
       return;
     }
 
-    await executeAction(requestId, action as 'Accept' | 'Reject');
+    const request = requests.find(r => r.requestId === requestId);
+    await executeAction(requestId.toString(), action as 'Accept' | 'Reject', { createdAt: request?.createdAt });
   };
 
   const handleModifyConfirm = async (modifyData: ModifyData) => {
@@ -168,7 +166,7 @@ const Dashboard = () => {
       if (request.requestId === selectedRequest.requestId) {
         return {
           ...request,
-          ...(modifyData.orderKg !== undefined && { orderValue: modifyData.orderKg }),
+          ...(modifyData.orderKg !== undefined && { orderQty: modifyData.orderKg }),
           ...(modifyData.discountType !== undefined && { discountType: modifyData.discountType }),
           ...(modifyData.discountValue !== undefined && { discountValue: modifyData.discountValue }),
         };
@@ -177,18 +175,18 @@ const Dashboard = () => {
     });
 
     setRequests(updatedRequests);
-    await executeAction(selectedRequest.requestId, 'Modify', modifyData);
+    await executeAction(selectedRequest.requestId.toString(), 'Modify', { ...modifyData, createdAt: selectedRequest.createdAt });
   };
 
   const handleEscalateConfirm = async (remarks: string) => {
     if (!selectedRequest) return;
 
-    await executeAction(selectedRequest.requestId, 'Escalate', { remarks });
+    await executeAction(selectedRequest.requestId.toString(), 'Escalate', { remarks, createdAt: selectedRequest.createdAt });
   };
 
   // Bulk action handlers
   const handleSelectAll = () => {
-    const eligibleRequests = requests.filter(r => !isActionDisabled(r.requestId));
+    const eligibleRequests = paginatedRequests.filter(r => !isActionDisabled(r.requestId.toString()));
     setSelectedRequests(eligibleRequests.map(r => r.requestId));
   };
 
@@ -199,25 +197,41 @@ const Dashboard = () => {
   const handleBulkAccept = async () => {
     const eligibleSelected = selectedRequests.filter(id => {
       const request = requests.find(r => r.requestId === id);
-      return request?.eligibility === 1 && !isActionDisabled(id);
+      return request?.eligible === 1 && !isActionDisabled(id.toString());
     });
     
     if (eligibleSelected.length > 0) {
-      await executeBulkAction(eligibleSelected, 'Accept');
+      const createdAtMap: Record<string, string> = {};
+      eligibleSelected.forEach(id => {
+        const request = requests.find(r => r.requestId === id);
+        if (request?.createdAt) {
+          createdAtMap[id.toString()] = request.createdAt;
+        }
+      });
+      
+      await executeBulkAction(eligibleSelected.map(id => id.toString()), 'Accept', { createdAtMap });
       setSelectedRequests([]);
     }
   };
 
   const handleBulkReject = async () => {
-    const eligibleSelected = selectedRequests.filter(id => !isActionDisabled(id));
+    const eligibleSelected = selectedRequests.filter(id => !isActionDisabled(id.toString()));
     
     if (eligibleSelected.length > 0) {
-      await executeBulkAction(eligibleSelected, 'Reject');
+      const createdAtMap: Record<string, string> = {};
+      eligibleSelected.forEach(id => {
+        const request = requests.find(r => r.requestId === id);
+        if (request?.createdAt) {
+          createdAtMap[id.toString()] = request.createdAt;
+        }
+      });
+      
+      await executeBulkAction(eligibleSelected.map(id => id.toString()), 'Reject', { createdAtMap });
       setSelectedRequests([]);
     }
   };
 
-  const handleCheckboxChange = (requestId: string, checked: boolean) => {
+  const handleCheckboxChange = (requestId: number, checked: boolean) => {
     if (checked) {
       setSelectedRequests(prev => [...prev, requestId]);
     } else {
@@ -228,17 +242,34 @@ const Dashboard = () => {
   // Filter requests based on search and date filter
   const filteredRequests = requests.filter(request => {
     const matchesSearch = 
-      request.customerId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      request.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      request.requestedBy.toLowerCase().includes(searchQuery.toLowerCase());
+      request.customerId.toString().includes(searchQuery.toLowerCase()) ||
+      request.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      request.requestedByUserName.toLowerCase().includes(searchQuery.toLowerCase());
 
     if (!matchesSearch) return false;
 
     if (!dateFilter) return true;
     
-    const requestDate = new Date(request.createdAt || "2024-01-15");
+    const requestDate = new Date(request.createdAt);
     return requestDate.toDateString() === dateFilter.toDateString();
   });
+
+  // Calculate pagination
+  const totalFilteredRequests = filteredRequests.length;
+  const calculatedTotalPages = Math.ceil(totalFilteredRequests / requestsPerPage);
+  
+  // Update total pages when filtered requests change
+  if (calculatedTotalPages !== totalPages) {
+    setTotalPages(calculatedTotalPages);
+    if (currentPage > calculatedTotalPages && calculatedTotalPages > 0) {
+      setCurrentPage(1);
+    }
+  }
+
+  // Get current page requests
+  const startIndex = (currentPage - 1) * requestsPerPage;
+  const endIndex = startIndex + requestsPerPage;
+  const paginatedRequests = filteredRequests.slice(startIndex, endIndex);
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -265,8 +296,8 @@ const Dashboard = () => {
 
         {/* Bulk Action Bar */}
         <BulkActionBar
-          selectedRequests={selectedRequests}
-          totalRequests={filteredRequests.filter(r => !isActionDisabled(r.requestId)).length}
+          selectedRequests={selectedRequests.map(id => id.toString())}
+          totalRequests={paginatedRequests.filter(r => !isActionDisabled(r.requestId.toString())).length}
           onSelectAll={handleSelectAll}
           onDeselectAll={handleDeselectAll}
           onBulkAccept={handleBulkAccept}
@@ -277,11 +308,11 @@ const Dashboard = () => {
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-semibold">
-              Approval Requests ({filteredRequests.length})
+              Approval Requests ({totalFilteredRequests})
             </h2>
           </div>
           
-          {filteredRequests.length === 0 ? (
+          {paginatedRequests.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
                 <p className="text-muted-foreground">No requests found matching your criteria.</p>
@@ -289,20 +320,27 @@ const Dashboard = () => {
             </Card>
           ) : (
             <div className="grid gap-4">
-              {filteredRequests.map((request) => (
+              {paginatedRequests.map((request) => (
                 <RequestCard
                   key={request.requestId}
                   request={request}
                   isSelected={selectedRequests.includes(request.requestId)}
-                  isDisabled={isActionDisabled(request.requestId)}
+                  isDisabled={isActionDisabled(request.requestId.toString())}
                   onSelectionChange={handleCheckboxChange}
                   onAction={handleAction}
-                  actionTaken={getActionTaken(request.requestId)}
+                  actionTaken={getActionTaken(request.requestId.toString())}
                   bulkModeActive={selectedRequests.length > 0}
                 />
               ))}
             </div>
           )}
+
+          {/* Pagination */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
         </div>
 
         {/* Modals */}
@@ -312,18 +350,18 @@ const Dashboard = () => {
               isOpen={modifyModalOpen}
               onClose={() => setModifyModalOpen(false)}
               onConfirm={handleModifyConfirm}
-              requestId={selectedRequest.requestId}
+              requestId={selectedRequest.requestId.toString()}
               currentData={{
-                orderValue: selectedRequest.orderValue,
+                orderValue: selectedRequest.orderQty,
                 discountType: selectedRequest.discountType,
-                discountValue: selectedRequest.discountValue,
+                discountValue: selectedRequest.discountValue || 0,
               }}
             />
             <EscalateRequestModal
               isOpen={escalateModalOpen}
               onClose={() => setEscalateModalOpen(false)}
               onConfirm={handleEscalateConfirm}
-              requestId={selectedRequest.requestId}
+              requestId={selectedRequest.requestId.toString()}
             />
           </>
         )}

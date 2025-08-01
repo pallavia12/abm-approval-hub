@@ -4,29 +4,32 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface ApprovalRequest {
-  requestId: string;
-  customerId: string;
-  name: string;
-  contactNumber: string;
+  requestId: number;
+  eligible: 0 | 1;
+  customerId: number;
+  customerName: string;
+  customerContact: number;
   campaignType: string;
-  skuName?: string;
-  orderValue: number;
-  discountValue: number;
+  skuId?: number;
+  orderQty: number;
+  discountValue: number | null;
   discountType: string;
   reason?: string;
-  requestedBy: string;
+  requestedBy: number;
+  requestedByUserName: string;
   requestedByContact: string;
-  eligibility: 0 | 1;
-  createdAt?: string;
+  ABM_Id: number;
+  ABM_UserName: string;
+  createdAt: string;
 }
 
 interface RequestCardProps {
   request: ApprovalRequest;
   isSelected: boolean;
   isDisabled: boolean;
-  onSelectionChange: (requestId: string, checked: boolean) => void;
-  onAction: (requestId: string, action: string) => void;
-  actionTaken?: { action: string; timestamp: string } | null;
+  onSelectionChange: (requestId: number, checked: boolean) => void;
+  onAction: (requestId: number, action: string) => void;
+  actionTaken?: { action: string; timestamp: string; tatTime?: string } | null;
   bulkModeActive: boolean;
 }
 
@@ -54,13 +57,18 @@ export const RequestCard = ({
       };
 
       return (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Badge variant="secondary" className="text-xs">
             {getActionPastTense(actionTaken.action)}
           </Badge>
           <span className="text-xs text-muted-foreground">
             {new Date(actionTaken.timestamp).toLocaleString()}
           </span>
+          {actionTaken.tatTime && (
+            <Badge variant="outline" className="text-xs">
+              TAT: {actionTaken.tatTime}
+            </Badge>
+          )}
         </div>
       );
     }
@@ -86,7 +94,7 @@ export const RequestCard = ({
       </>
     );
 
-    if (request.eligibility === 1) {
+    if (request.eligible === 1) {
       return (
         <div className="flex gap-2">
           <Button 
@@ -132,10 +140,10 @@ export const RequestCard = ({
             <CardTitle className="text-lg">{request.requestId}</CardTitle>
           </div>
           <Badge 
-            variant={request.eligibility === 1 ? "default" : "destructive"}
+            variant={request.eligible === 1 ? "default" : "destructive"}
             className="text-xs"
           >
-            {request.eligibility === 1 ? "Eligible" : "Not Eligible"}
+            {request.eligible === 1 ? "Eligible" : "Not Eligible"}
           </Badge>
         </div>
       </CardHeader>
@@ -143,8 +151,8 @@ export const RequestCard = ({
         {/* Customer Details */}
         <div>
           <h4 className="font-medium text-sm text-muted-foreground mb-1">Customer</h4>
-          <div className="font-medium">{request.name} ({request.customerId})</div>
-          <div className="text-sm text-muted-foreground">{request.contactNumber}</div>
+          <div className="font-medium">{request.customerName} ({request.customerId})</div>
+          <div className="text-sm text-muted-foreground">{request.customerContact}</div>
         </div>
 
         {/* Campaign & Order Info */}
@@ -155,9 +163,9 @@ export const RequestCard = ({
           </div>
           <div>
             <h4 className="font-medium text-sm text-muted-foreground mb-1">Order</h4>
-            <div className="text-sm font-medium">{request.orderValue} kg</div>
-            {request.skuName && (
-              <div className="text-xs text-muted-foreground">SKU: {request.skuName}</div>
+            <div className="text-sm font-medium">{request.orderQty} kg</div>
+            {request.skuId && (
+              <div className="text-xs text-muted-foreground">SKU ID: {request.skuId}</div>
             )}
           </div>
         </div>
@@ -166,9 +174,7 @@ export const RequestCard = ({
         <div>
           <h4 className="font-medium text-sm text-muted-foreground mb-1">Discount</h4>
           <div className="text-sm">
-            {request.discountValue}
-            {request.discountType === "Percentage" ? "%" : " ₹"} 
-            <span className="text-muted-foreground ml-1">({request.discountType})</span>
+            {request.discountValue || 0} ({request.discountType})
           </div>
         </div>
 
@@ -184,12 +190,12 @@ export const RequestCard = ({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <h4 className="font-medium text-sm text-muted-foreground mb-1">Requested By</h4>
-            <div className="text-sm">{request.requestedBy}</div>
+            <div className="text-sm">{request.requestedByUserName}</div>
             <div className="text-xs text-muted-foreground">{request.requestedByContact}</div>
           </div>
           <div>
             <h4 className="font-medium text-sm text-muted-foreground mb-1">Requested Date</h4>
-            <div className="text-sm">{new Date(request.createdAt || new Date()).toLocaleDateString()}</div>
+            <div className="text-sm">{request.createdAt}</div>
           </div>
         </div>
 
