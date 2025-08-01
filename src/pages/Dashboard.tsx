@@ -124,10 +124,17 @@ const Dashboard = () => {
         // Store debug data
         setDebugData(data);
         
-        // Handle single JSON response format - expecting direct array of requests
+        // Handle nested JSON response format - extract data from nested 'json' property
         let processedRequests: ApprovalRequest[] = [];
         if (Array.isArray(data)) {
-          processedRequests = data;
+          processedRequests = data.map(item => {
+            // Extract the actual request data from the nested 'json' property
+            if (item && item.json) {
+              return item.json as ApprovalRequest;
+            }
+            // Fallback for items that might not have nested structure
+            return item as ApprovalRequest;
+          }).filter(Boolean); // Remove any null/undefined items
         } else {
           console.error("Expected array of requests, received:", typeof data, data);
           throw new Error("Invalid response format: expected array of approval requests");
