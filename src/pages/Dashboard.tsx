@@ -75,12 +75,48 @@ const Dashboard = () => {
     }
     setUsername(asgardUsername);
     
-    // Parallel API calls for requests and reportees
+          // Instead of parallel, try sequential
+  useEffect(() => {
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      
+      // Call first API
+      const response1 = await fetch('YOUR_REQUESTS_WEBHOOK_URL', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const requests = await response1.json();
+      
+      // Then call second API
+      const response2 = await fetch('YOUR_REPORTEES_WEBHOOK_URL', {
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const reportees = await response2.json();
+      
+      // Process both responses
+      setRequestsData(requests);
+      setReporteesData(reportees);
+      
+    } catch (error) {
+      console.error('API Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  fetchData();
+}, []);
+
+      /*
+
+      // Parallel API calls for requests and reportees
     const fetchData = async () => {
         console.log(`[Dashboard.tsx:79] Starting parallel data fetch for user: ${asgardUsername}`);
         console.log('API URLs:', {
-          requests: 'http://localhost:5678/webhook-test/fetch-requests',
-          reportees: 'http://localhost:5678/webhook-test/get-reportees'
+          requests: 'http://localhost:5678/webhook-test/fetch-requests'
+          //,reportees: 'http://localhost:5678/webhook-test/get-reportees'
         });
       setIsLoading(true);
       setError(null);
@@ -151,6 +187,8 @@ const Dashboard = () => {
     
     fetchData();
   }, [navigate, toast]);
+
+  */
 
   const handleLogout = () => {
     localStorage.removeItem("asgard_username");
