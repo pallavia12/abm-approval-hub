@@ -75,41 +75,6 @@ const Dashboard = () => {
     }
     setUsername(asgardUsername);
 
-    // Instead of parallel, try sequential
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      
-      // Call first API
-      const response1 = await fetch('YOUR_REQUESTS_WEBHOOK_URL', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const requests = await response1.json();
-      /*
-      // Then call second API
-      const response2 = await fetch('YOUR_REPORTEES_WEBHOOK_URL', {
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const reportees = await response2.json();
-      */
-      
-      // Process both responses
-      setRequestsData(requests);
-      //setReporteesData(reportees);
-      
-    } catch (error) {
-      console.error('API Error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-
-
-    /*
     // Parallel API calls for requests and reportees
     const fetchData = async () => {
         console.log(`[Dashboard.tsx:79] Starting parallel data fetch for user: ${asgardUsername}`);
@@ -183,7 +148,6 @@ const Dashboard = () => {
         setIsLoading(false);
       }
     };
-    */
     
     fetchData();
   }, [navigate, toast]);
