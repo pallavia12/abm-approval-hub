@@ -37,7 +37,7 @@ export const SearchAndFilters = ({
             <SelectValue placeholder="Filter by BDM" />
           </SelectTrigger>
           <SelectContent className="max-h-[200px] overflow-y-auto">
-            <SelectItem value="all">All BDMs</SelectItem>
+            <SelectItem key="all" value="all">All BDMs</SelectItem>
             {seUsers.map((user) => (
               <SelectItem key={user.SE_UserName} value={user.SE_UserName}>
                 {user.SE_UserName}
