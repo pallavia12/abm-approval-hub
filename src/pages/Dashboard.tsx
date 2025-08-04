@@ -177,6 +177,7 @@ const Dashboard = () => {
           }
         }
         
+        
         console.log('[Dashboard.tsx] Extracted raw reportees:', rawReportees);
         console.log('[Dashboard.tsx] Raw reportees count:', rawReportees.length);
         
@@ -184,7 +185,14 @@ const Dashboard = () => {
         if (Array.isArray(rawReportees) && rawReportees.length > 0) {
           // Log first few items to understand structure
           console.log('[Dashboard.tsx] First few raw reportees:', rawReportees.slice(0, 3));
+
           
+        processedReportees = rawReportees
+  .map(item => item.json)
+  .filter((reportee, index, arr) => 
+    arr.findIndex(r => r.SE_UserName === reportee.SE_UserName) === index
+  );
+          /*
           processedReportees = rawReportees
             .filter(reportee => {
               // Log each reportee to understand the structure
@@ -194,6 +202,7 @@ const Dashboard = () => {
             .filter((reportee, index, arr) => 
               arr.findIndex(r => r.SE_UserName === reportee.SE_UserName) === index
             );
+            */
         }
         
         console.log(`[Dashboard.tsx] Successfully processed ${processedReportees.length} unique reportees with valid SE_UserName`);
