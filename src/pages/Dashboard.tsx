@@ -67,7 +67,7 @@ const Dashboard = () => {
   const { toast } = useToast();
   const { executeAction, executeBulkAction, isActionDisabled, getActionTaken } = useActionHandler();
 
-  useEffect(() => {
+
     const asgardUsername = localStorage.getItem("asgard_username");
     if (!asgardUsername) {
       navigate("/");
@@ -76,7 +76,6 @@ const Dashboard = () => {
     setUsername(asgardUsername);
     
           // Instead of parallel, try sequential
-  useEffect(() => {
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -107,7 +106,6 @@ const Dashboard = () => {
   };
   
   fetchData();
-}, []);
 
       /*
 
@@ -186,9 +184,11 @@ const Dashboard = () => {
     };
     
     fetchData();
+
+    */
   }, [navigate, toast]);
 
-  */
+  
 
   const handleLogout = () => {
     localStorage.removeItem("asgard_username");
