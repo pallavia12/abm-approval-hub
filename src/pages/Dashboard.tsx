@@ -87,17 +87,18 @@ const Dashboard = () => {
         headers: { 'Content-Type': 'application/json' }
       });
       const requests = await response1.json();
-      
+      /*
       // Then call second API
       const response2 = await fetch('YOUR_REPORTEES_WEBHOOK_URL', {
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' }
       });
       const reportees = await response2.json();
+      */
       
       // Process both responses
       setRequestsData(requests);
-      setReporteesData(reportees);
+      //setReporteesData(reportees);
       
     } catch (error) {
       console.error('API Error:', error);
