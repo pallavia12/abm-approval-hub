@@ -67,15 +67,16 @@ const Dashboard = () => {
   const { toast } = useToast();
   const { executeAction, executeBulkAction, isActionDisabled, getActionTaken } = useActionHandler();
 
-
+  useEffect(() => {
     const asgardUsername = localStorage.getItem("asgard_username");
     if (!asgardUsername) {
       navigate("/");
       return;
     }
     setUsername(asgardUsername);
-    
-          // Instead of parallel, try sequential
+
+    // Instead of parallel, try sequential
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -105,16 +106,15 @@ const Dashboard = () => {
     }
   };
   
-  fetchData();
 
-      /*
 
-      // Parallel API calls for requests and reportees
+    /*
+    // Parallel API calls for requests and reportees
     const fetchData = async () => {
         console.log(`[Dashboard.tsx:79] Starting parallel data fetch for user: ${asgardUsername}`);
         console.log('API URLs:', {
-          requests: 'http://localhost:5678/webhook-test/fetch-requests'
-          //,reportees: 'http://localhost:5678/webhook-test/get-reportees'
+          requests: 'http://localhost:5678/webhook-test/fetch-requests',
+          reportees: 'http://localhost:5678/webhook-test/get-reportees'
         });
       setIsLoading(true);
       setError(null);
@@ -182,13 +182,10 @@ const Dashboard = () => {
         setIsLoading(false);
       }
     };
+    */
     
     fetchData();
-
-    */
   }, [navigate, toast]);
-
-  
 
   const handleLogout = () => {
     localStorage.removeItem("asgard_username");
