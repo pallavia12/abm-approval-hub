@@ -75,78 +75,121 @@ const Dashboard = () => {
     }
     setUsername(asgardUsername);
 
-    // Parallel API calls for requests and reportees
+    // Sequential API calls for requests and reportees with independent error handling
     const fetchData = async () => {
-        console.log(`[Dashboard.tsx:79] Starting parallel data fetch for user: ${asgardUsername}`);
-        console.log('API URLs:', {
-          requests: 'http://localhost:5678/webhook-test/fetch-requests',
-          reportees: 'http://localhost:5678/webhook-test/get-reportees'
-        });
+      console.log(`[Dashboard.tsx:79] Starting sequential data fetch for user: ${asgardUsername}`);
+      console.log('API URLs:', {
+        requests: 'http://localhost:5678/webhook-test/fetch-requests',
+        reportees: 'http://localhost:5678/webhook-test/get-reportees'
+      });
+      
       setIsLoading(true);
       setError(null);
       
+      let requestsSuccess = false;
+      let reporteesSuccess = false;
+      const errors: string[] = [];
+      
+      // Initialize with empty arrays for graceful degradation
+      let processedRequests: ApprovalRequest[] = [];
+      let processedReportees: Reportee[] = [];
+      
+      // Fetch requests first
       try {
-        // Parallel API calls
-        const [requestsResponse, reporteesResponse] = await Promise.all([
-          fetch(`http://localhost:5678/webhook-test/fetch-requests`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username: asgardUsername }),
-          }),
-          fetch(`http://localhost:5678/webhook-test/get-reportees`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              SE_Id: 35941,
-              SE_UserName: "Kumarjk",
-              ABM_Id: 2179814,
-              ABM_UserName: asgardUsername
-            }),
-          })
-        ]);
+        console.log('[Dashboard.tsx] Fetching approval requests...');
+        const requestsResponse = await fetch(`http://localhost:5678/webhook-test/fetch-requests`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: asgardUsername }),
+        });
         
         if (!requestsResponse.ok) {
-          throw new Error(`Failed to fetch requests: ${requestsResponse.status}`);
+          throw new Error(`Failed to fetch requests: ${requestsResponse.status} ${requestsResponse.statusText}`);
         }
         
-        if (!reporteesResponse.ok) {
-          throw new Error(`Failed to fetch reportees: ${reporteesResponse.status}`);
-        }
-        
-        // Parse responses
         const requestsData = await requestsResponse.json();
-        const reporteesData = await reporteesResponse.json();
-        
-        setDebugData({ requests: requestsData, reportees: reporteesData });
         
         // Process requests - handle single JSON format with nested structure
-        let processedRequests: ApprovalRequest[] = [];
         if (Array.isArray(requestsData)) {
           processedRequests = requestsData.map(item => item.json as ApprovalRequest);
         }
         
+        console.log(`[Dashboard.tsx] Successfully processed ${processedRequests.length} requests`);
+        requestsSuccess = true;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        console.error(`[Dashboard.tsx] Failed to fetch requests:`, { error, errorMessage, username: asgardUsername });
+        errors.push(`Requests: ${errorMessage}`);
+        toast({
+          title: "Failed to fetch approval requests",
+          description: `Unable to load approval requests: ${errorMessage}`,
+          variant: "destructive"
+        });
+      }
+      
+      // Fetch reportees second, independently of requests result
+      try {
+        console.log('[Dashboard.tsx] Fetching reportees...');
+        const reporteesResponse = await fetch(`http://localhost:5678/webhook-test/get-reportees`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            SE_Id: 35941,
+            SE_UserName: "Kumarjk",
+            ABM_Id: 2179814,
+            ABM_UserName: asgardUsername
+          }),
+        });
+        
+        if (!reporteesResponse.ok) {
+          throw new Error(`Failed to fetch reportees: ${reporteesResponse.status} ${reporteesResponse.statusText}`);
+        }
+        
+        const reporteesData = await reporteesResponse.json();
+        
         // Process reportees
-        let processedReportees: Reportee[] = [];
         if (Array.isArray(reporteesData)) {
           processedReportees = reporteesData;
         }
         
-        console.log(`[Dashboard.tsx:120] Successfully processed ${processedRequests.length} requests and ${processedReportees.length} reportees`);
-        setRequests(processedRequests);
-        setReportees(processedReportees);
-        setError(null);
+        console.log(`[Dashboard.tsx] Successfully processed ${processedReportees.length} reportees`);
+        reporteesSuccess = true;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        console.error(`[Dashboard.tsx:127] Failed to fetch data:`, { error, errorMessage, username: asgardUsername });
-        setError(errorMessage);
+        console.error(`[Dashboard.tsx] Failed to fetch reportees:`, { error, errorMessage, username: asgardUsername });
+        errors.push(`Reportees: ${errorMessage}`);
         toast({
-          title: "Failed to fetch data",
-          description: `Unable to load data: ${errorMessage}`,
+          title: "Failed to fetch reportees",
+          description: `Unable to load BDM data: ${errorMessage}`,
           variant: "destructive"
         });
-      } finally {
-        setIsLoading(false);
       }
+      
+      // Set debug data with both successful and failed responses
+      setDebugData({ 
+        requests: requestsSuccess ? processedRequests : null, 
+        reportees: reporteesSuccess ? processedReportees : null,
+        errors: errors.length > 0 ? errors : null
+      });
+      
+      // Update state with whatever data we managed to fetch
+      setRequests(processedRequests);
+      setReportees(processedReportees);
+      
+      // Set overall error state only if both APIs failed
+      if (!requestsSuccess && !reporteesSuccess) {
+        setError(`Both API calls failed: ${errors.join(', ')}`);
+      } else if (errors.length > 0) {
+        // Partial success - show warning but allow functionality
+        setError(null); // Clear error to allow UI to function
+        console.warn('[Dashboard.tsx] Partial data load:', { errors, requestsCount: processedRequests.length, reporteesCount: processedReportees.length });
+      } else {
+        // Full success
+        setError(null);
+        console.log(`[Dashboard.tsx] Successfully loaded all data: ${processedRequests.length} requests and ${processedReportees.length} reportees`);
+      }
+      
+      setIsLoading(false);
     };
     
     fetchData();
