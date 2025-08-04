@@ -147,12 +147,17 @@ const Dashboard = () => {
         
         const reporteesData = await reporteesResponse.json();
         
-        // Process reportees
-        if (Array.isArray(reporteesData)) {
-          processedReportees = reporteesData;
-        }
-        
-        console.log(`[Dashboard.tsx] Successfully processed ${processedReportees.length} reportees`);
+      // Process reportees - filter out invalid entries and create unique SE users
+      if (Array.isArray(reporteesData)) {
+        processedReportees = reporteesData
+          .filter(reportee => reportee && reportee.SE_UserName && reportee.SE_UserName.trim() !== '')
+          .filter((reportee, index, arr) => 
+            arr.findIndex(r => r.SE_UserName === reportee.SE_UserName) === index
+          );
+      }
+      
+      console.log(`[Dashboard.tsx] Successfully processed ${processedReportees.length} unique reportees with valid SE_UserName`);
+      console.log('[Dashboard.tsx] Unique SE Users:', processedReportees.map(r => r.SE_UserName));
         reporteesSuccess = true;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -318,8 +323,12 @@ const Dashboard = () => {
 
     if (selectedBdm === "all" || !selectedBdm) return true;
     
-    // Filter by requested by user name from reportees data
-    return request.requestedByUserName === selectedBdm;
+    // Filter by SE users who can approve - check if the selected SE user manages the ABM
+    const selectedReportee = reportees.find(r => r.SE_UserName === selectedBdm);
+    if (!selectedReportee) return false;
+    
+    // Check if the selected SE user manages the ABM of this request
+    return request.ABM_UserName === selectedReportee.ABM_UserName;
   });
 
   // Calculate pagination
