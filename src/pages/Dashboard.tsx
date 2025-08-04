@@ -77,7 +77,11 @@ const Dashboard = () => {
     
     // Parallel API calls for requests and reportees
     const fetchData = async () => {
-      console.log(`[Dashboard.tsx:79] Starting parallel data fetch for user: ${asgardUsername}`);
+        console.log(`[Dashboard.tsx:79] Starting parallel data fetch for user: ${asgardUsername}`);
+        console.log('API URLs:', {
+          requests: 'http://localhost:5678/webhook-test/fetch-requests',
+          reportees: 'http://localhost:5678/webhook-test/get-reportees'
+        });
       setIsLoading(true);
       setError(null);
       
