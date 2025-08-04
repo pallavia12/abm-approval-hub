@@ -30,14 +30,14 @@ export const SearchAndFilters = ({
         />
       </div>
 
-      {/* SE User Filter */}
+      {/* BDM Filter */}
       <div className="w-full sm:w-48">
         <Select value={selectedSeUser} onValueChange={onSeUserChange}>
           <SelectTrigger>
-            <SelectValue placeholder="Filter by SE User" />
+            <SelectValue placeholder="Filter by BDM" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All SE Users</SelectItem>
+            <SelectItem value="all">All BDMs</SelectItem>
             {seUsers.map((user) => (
               <SelectItem key={user.SE_UserName} value={user.SE_UserName}>
                 {user.SE_UserName}

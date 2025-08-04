@@ -32,7 +32,7 @@ interface ApprovalRequest {
   createdAt: string;
 }
 
-interface SEUser {
+interface Reportee {
   SE_Id: number;
   SE_UserName: string;
   ABM_Id: number;
@@ -47,14 +47,14 @@ const getApiUrl = () => {
 
 const Dashboard = () => {
   const [requests, setRequests] = useState<ApprovalRequest[]>([]);
-  const [seUsers, setSeUsers] = useState<SEUser[]>([]);
+  const [reportees, setReportees] = useState<Reportee[]>([]);
   const [username, setUsername] = useState<string>("");
   const [modifyModalOpen, setModifyModalOpen] = useState(false);
   const [escalateModalOpen, setEscalateModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<ApprovalRequest | null>(null);
   const [selectedRequests, setSelectedRequests] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [selectedSeUser, setSelectedSeUser] = useState<string>("all");
+  const [selectedBdm, setSelectedBdm] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -75,113 +75,77 @@ const Dashboard = () => {
     }
     setUsername(asgardUsername);
     
-    // Fetch requests from the API
-    const fetchRequests = async () => {
-      console.log(`[Dashboard.tsx:72] Starting fetch request for user: ${asgardUsername}`);
+    // Parallel API calls for requests and reportees
+    const fetchData = async () => {
+      console.log(`[Dashboard.tsx:79] Starting parallel data fetch for user: ${asgardUsername}`);
       setIsLoading(true);
       setError(null);
       
       try {
-        console.log(`[Dashboard.tsx:77] Making POST request to webhook endpoint`);
-        const response = await fetch(`http://localhost:5678/webhook-test/fetch-requests`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: asgardUsername,
+        // Parallel API calls
+        const [requestsResponse, reporteesResponse] = await Promise.all([
+          fetch(`http://localhost:5678/webhook-test/fetch-requests`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: asgardUsername }),
           }),
-        });
+          fetch(`http://localhost:5678/webhook-test/get-reportees`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              SE_Id: 35941,
+              SE_UserName: "Kumarjk",
+              ABM_Id: 2179814,
+              ABM_UserName: asgardUsername
+            }),
+          })
+        ]);
         
-        console.log(`[Dashboard.tsx:87] Received response with status: ${response.status} ${response.statusText}`);
-        
-        if (!response.ok) {
-          const errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-          console.error(`[Dashboard.tsx:90] Request failed - ${errorMessage}`);
-          throw new Error(errorMessage);
+        if (!requestsResponse.ok) {
+          throw new Error(`Failed to fetch requests: ${requestsResponse.status}`);
         }
         
-        // Get response as text first
-        let responseText: string;
-        try {
-          console.log(`[Dashboard.tsx:98] Getting response as text`);
-          responseText = await response.text();
-          console.log(`[Dashboard.tsx:100] Raw response text:`, responseText);
-        } catch (textError) {
-          console.error(`[Dashboard.tsx:102] Failed to get response text:`, textError);
-          throw new Error(`Failed to read server response: ${textError instanceof Error ? textError.message : 'Unknown error'}`);
-        }
-
-        // Parse the text as JSON
-        let data;
-        try {
-          console.log(`[Dashboard.tsx:109] Attempting to parse JSON from response text`);
-          data = JSON.parse(responseText);
-          console.log(`[Dashboard.tsx:111] Successfully parsed JSON data:`, data);
-        } catch (jsonError) {
-          console.error(`[Dashboard.tsx:113] JSON parsing failed:`, {
-            error: jsonError,
-            message: jsonError instanceof Error ? jsonError.message : 'Unknown JSON parsing error',
-            responseStatus: response.status,
-            responseHeaders: Object.fromEntries(response.headers.entries()),
-            rawResponseText: responseText
-          });
-          throw new Error(`Failed to parse server response as JSON: ${jsonError instanceof Error ? jsonError.message : 'Unknown error'}. Raw response: "${responseText}"`);
+        if (!reporteesResponse.ok) {
+          throw new Error(`Failed to fetch reportees: ${reporteesResponse.status}`);
         }
         
-        // Store debug data
-        setDebugData(data);
+        // Parse responses
+        const requestsData = await requestsResponse.json();
+        const reporteesData = await reporteesResponse.json();
         
-        // Handle mixed response format - extract both ApprovalRequest and SEUser data
+        setDebugData({ requests: requestsData, reportees: reporteesData });
+        
+        // Process requests - handle single JSON format with nested structure
         let processedRequests: ApprovalRequest[] = [];
-        let processedSeUsers: SEUser[] = [];
-        
-        if (Array.isArray(data)) {
-          data.forEach(item => {
-            if (item && item.json) {
-              // This is an ApprovalRequest with nested json structure
-              const requestData = item.json;
-              if (requestData.requestId !== undefined) {
-                processedRequests.push(requestData as ApprovalRequest);
-              }
-            } else if (item && item.SE_Id !== undefined) {
-              // This is a direct SEUser object
-              processedSeUsers.push(item as SEUser);
-            } else if (item && item.requestId !== undefined) {
-              // This is a direct ApprovalRequest object
-              processedRequests.push(item as ApprovalRequest);
-            }
-          });
-        } else {
-          console.error("Expected array of requests, received:", typeof data, data);
-          throw new Error("Invalid response format: expected array of data");
+        if (Array.isArray(requestsData)) {
+          processedRequests = requestsData.map(item => item.json as ApprovalRequest);
         }
         
-        console.log(`[Dashboard.tsx:149] Successfully processed ${processedRequests.length} requests and ${processedSeUsers.length} SE users from API response`);
+        // Process reportees
+        let processedReportees: Reportee[] = [];
+        if (Array.isArray(reporteesData)) {
+          processedReportees = reporteesData;
+        }
+        
+        console.log(`[Dashboard.tsx:120] Successfully processed ${processedRequests.length} requests and ${processedReportees.length} reportees`);
         setRequests(processedRequests);
-        setSeUsers(processedSeUsers);
+        setReportees(processedReportees);
         setError(null);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        console.error(`[Dashboard.tsx:143] Failed to fetch approval requests:`, {
-          error: error,
-          message: errorMessage,
-          timestamp: new Date().toISOString(),
-          username: asgardUsername
-        });
+        console.error(`[Dashboard.tsx:127] Failed to fetch data:`, { error, errorMessage, username: asgardUsername });
         setError(errorMessage);
         toast({
-            title: "Failed to fetch data",
-            description: `Unable to load approval requests: ${errorMessage}`,
-            variant: "destructive"
-          });
-        
+          title: "Failed to fetch data",
+          description: `Unable to load data: ${errorMessage}`,
+          variant: "destructive"
+        });
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchRequests();
+    fetchData();
   }, [navigate, toast]);
 
   const handleLogout = () => {
@@ -296,7 +260,7 @@ const Dashboard = () => {
     }
   };
 
-  // Filter requests based on search and SE user filter
+  // Filter requests based on search and BDM filter
   const filteredRequests = requests.filter(request => {
     const matchesSearch = 
       (request.customerId?.toString() || '').includes(searchQuery.toLowerCase()) ||
@@ -305,11 +269,10 @@ const Dashboard = () => {
 
     if (!matchesSearch) return false;
 
-    if (selectedSeUser === "all" || !selectedSeUser) return true;
+    if (selectedBdm === "all" || !selectedBdm) return true;
     
-    // Filter by SE user - match against the request's SE user from seUsers data
-    const matchingSeUser = seUsers.find(se => se.ABM_Id === request.ABM_Id);
-    return matchingSeUser?.SE_UserName === selectedSeUser;
+    // Filter by requested by user name from reportees data
+    return request.requestedByUserName === selectedBdm;
   });
 
   // Calculate pagination
@@ -364,9 +327,9 @@ const Dashboard = () => {
         <SearchAndFilters
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          seUsers={seUsers}
-          selectedSeUser={selectedSeUser}
-          onSeUserChange={setSelectedSeUser}
+          seUsers={reportees}
+          selectedSeUser={selectedBdm}
+          onSeUserChange={setSelectedBdm}
         />
 
         {/* Bulk Action Bar */}
