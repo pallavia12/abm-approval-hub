@@ -147,17 +147,57 @@ const Dashboard = () => {
         
         const reporteesData = await reporteesResponse.json();
         
-      // Process reportees - filter out invalid entries and create unique SE users
-      if (Array.isArray(reporteesData)) {
-        processedReportees = reporteesData
-          .filter(reportee => reportee && reportee.SE_UserName && reportee.SE_UserName.trim() !== '')
-          .filter((reportee, index, arr) => 
-            arr.findIndex(r => r.SE_UserName === reportee.SE_UserName) === index
-          );
-      }
-      
-      console.log(`[Dashboard.tsx] Successfully processed ${processedReportees.length} unique reportees with valid SE_UserName`);
-      console.log('[Dashboard.tsx] Unique SE Users:', processedReportees.map(r => r.SE_UserName));
+        // Debug: Log the raw API response structure
+        console.log('[Dashboard.tsx] Raw reportees API response:', reporteesData);
+        console.log('[Dashboard.tsx] Response type:', typeof reporteesData);
+        console.log('[Dashboard.tsx] Is array:', Array.isArray(reporteesData));
+        
+        // Process reportees - handle different possible response structures
+        let rawReportees = [];
+        
+        if (Array.isArray(reporteesData)) {
+          rawReportees = reporteesData;
+        } else if (reporteesData && typeof reporteesData === 'object') {
+          // Check if it's wrapped in a property like 'data', 'result', etc.
+          if (Array.isArray(reporteesData.data)) {
+            rawReportees = reporteesData.data;
+          } else if (Array.isArray(reporteesData.result)) {
+            rawReportees = reporteesData.result;
+          } else if (Array.isArray(reporteesData.reportees)) {
+            rawReportees = reporteesData.reportees;
+          } else {
+            // Try to find any array property
+            for (const key in reporteesData) {
+              if (Array.isArray(reporteesData[key])) {
+                rawReportees = reporteesData[key];
+                console.log(`[Dashboard.tsx] Found array data in property: ${key}`);
+                break;
+              }
+            }
+          }
+        }
+        
+        console.log('[Dashboard.tsx] Extracted raw reportees:', rawReportees);
+        console.log('[Dashboard.tsx] Raw reportees count:', rawReportees.length);
+        
+        // Now filter out invalid entries and create unique SE users
+        if (Array.isArray(rawReportees) && rawReportees.length > 0) {
+          // Log first few items to understand structure
+          console.log('[Dashboard.tsx] First few raw reportees:', rawReportees.slice(0, 3));
+          
+          processedReportees = rawReportees
+            .filter(reportee => {
+              // Log each reportee to understand the structure
+              console.log('[Dashboard.tsx] Processing reportee:', reportee);
+              return reportee && reportee.SE_UserName && reportee.SE_UserName.trim() !== '';
+            })
+            .filter((reportee, index, arr) => 
+              arr.findIndex(r => r.SE_UserName === reportee.SE_UserName) === index
+            );
+        }
+        
+        console.log(`[Dashboard.tsx] Successfully processed ${processedReportees.length} unique reportees with valid SE_UserName`);
+        console.log('[Dashboard.tsx] Unique SE Users:', processedReportees.map(r => r.SE_UserName));
         reporteesSuccess = true;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
