@@ -109,9 +109,9 @@ const Dashboard = () => {
         
         const requestsData = await requestsResponse.json();
         
-        // Process requests - handle single JSON format with nested structure
+        // Process requests - handle direct array response
         if (Array.isArray(requestsData)) {
-          processedRequests = requestsData.map(item => item.json as ApprovalRequest);
+          processedRequests = requestsData as ApprovalRequest[];
         }
         
         console.log(`[Dashboard.tsx] Successfully processed ${processedRequests.length} requests`);
