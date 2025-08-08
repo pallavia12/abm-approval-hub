@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 
 export interface ActionResult {
   requestId: string;
@@ -47,7 +48,9 @@ export const useActionHandler = () => {
   };
 
   const executeAction = async (requestId: string, action: 'Accept' | 'Reject' | 'Modify' | 'Escalate', additionalData?: any) => {
-    const timestamp = new Date().toISOString();
+    const now = new Date();
+    const timestamp = now.toISOString();
+    const formattedTimestamp = format(now, 'yyyy:MM:dd HH:mm:ss');
     const username = localStorage.getItem("asgard_username") || "";
     
     // Map actions to the expected status values
@@ -66,7 +69,7 @@ export const useActionHandler = () => {
       abmDiscountValue: action === 'Modify' ? additionalData?.discountValue || null : null,
       abmRemarks: action === 'Escalate' ? additionalData?.remarks || null : null,
       abmReviewedBy: username,
-      abmReviewedAt: timestamp
+      abmReviewedAt: formattedTimestamp
     };
 
     const result = await sendToDiscountUpdateWebhook(payload);
@@ -103,7 +106,9 @@ export const useActionHandler = () => {
   };
 
   const executeBulkAction = async (requestIds: string[], action: 'Accept' | 'Reject', additionalData?: any) => {
-    const timestamp = new Date().toISOString();
+    const now = new Date();
+    const timestamp = now.toISOString();
+    const formattedTimestamp = format(now, 'yyyy:MM:dd HH:mm:ss');
     const username = localStorage.getItem("asgard_username") || "";
     
     // Map actions to the expected status values
@@ -120,7 +125,7 @@ export const useActionHandler = () => {
       abmDiscountValue: null,
       abmRemarks: null, // Bulk actions are not escalations
       abmReviewedBy: username,
-      abmReviewedAt: timestamp
+      abmReviewedAt: formattedTimestamp
     };
 
     const result = await sendToDiscountUpdateWebhook(payload);
