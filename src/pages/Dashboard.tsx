@@ -188,7 +188,9 @@ const Dashboard = () => {
 
           
         processedReportees = rawReportees
-  .map(item => item.json)
+  .filter(reportee => 
+    reportee && reportee.SE_UserName && reportee.SE_UserName.trim() !== ''
+  )
   .filter((reportee, index, arr) => 
     arr.findIndex(r => r.SE_UserName === reportee.SE_UserName) === index
   );
