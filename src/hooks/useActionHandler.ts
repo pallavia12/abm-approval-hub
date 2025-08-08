@@ -14,23 +14,23 @@ export const useActionHandler = () => {
   const [actionResults, setActionResults] = useState<Record<string, ActionResult>>({});
   const { toast } = useToast();
 
-  const sendToN8n = async (data: any) => {
-    // Placeholder for n8n integration - will be updated with actual URL
-    console.log('Sending to n8n:', data);
+  const sendToDiscountUpdateWebhook = async (data: any) => {
+    console.log('Sending to discount update webhook:', data);
     
     try {
-      // TODO: Replace with actual n8n URL
-      // const response = await fetch('N8N_WEBHOOK_URL', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(data)
-      // });
+      const response = await fetch('http://localhost:5678/webhook-test/update-discount-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
       
-      // Simulate API call for now
-      await new Promise(resolve => setTimeout(resolve, 500));
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       return { success: true };
     } catch (error) {
-      console.error('Error sending to n8n:', error);
+      console.error('Error sending to discount update webhook:', error);
       return { success: false, error };
     }
   };
@@ -48,15 +48,28 @@ export const useActionHandler = () => {
 
   const executeAction = async (requestId: string, action: 'Accept' | 'Reject' | 'Modify' | 'Escalate', additionalData?: any) => {
     const timestamp = new Date().toISOString();
+    const username = localStorage.getItem("asgard_username") || "";
     
-    const actionData = {
-      requestId,
-      action,
-      timestamp,
-      ...additionalData
+    // Map actions to the expected status values
+    const statusMap = {
+      'Accept': 'Approve',
+      'Reject': 'Reject', 
+      'Modify': 'Modify',
+      'Escalate': 'Escalate'
     };
 
-    const result = await sendToN8n(actionData);
+    const payload = {
+      ids: [parseInt(requestId)],
+      abmStatus: statusMap[action],
+      abmOrderQty: action === 'Modify' ? additionalData?.orderKg || null : null,
+      abmDiscountType: action === 'Modify' ? additionalData?.discountType || null : null,
+      abmDiscountValue: action === 'Modify' ? additionalData?.discountValue || null : null,
+      abmRemarks: action === 'Escalate' ? additionalData?.remarks || null : null,
+      abmReviewedBy: username,
+      abmReviewedAt: timestamp
+    };
+
+    const result = await sendToDiscountUpdateWebhook(payload);
     
     if (result.success) {
       const createdAt = additionalData?.createdAt;
@@ -91,16 +104,26 @@ export const useActionHandler = () => {
 
   const executeBulkAction = async (requestIds: string[], action: 'Accept' | 'Reject', additionalData?: any) => {
     const timestamp = new Date().toISOString();
+    const username = localStorage.getItem("asgard_username") || "";
     
-    const bulkData = {
-      requestIds,
-      action,
-      timestamp,
-      bulkAction: true,
-      ...additionalData
+    // Map actions to the expected status values
+    const statusMap = {
+      'Accept': 'Approve',
+      'Reject': 'Reject'
     };
 
-    const result = await sendToN8n(bulkData);
+    const payload = {
+      ids: requestIds.map(id => parseInt(id)),
+      abmStatus: statusMap[action],
+      abmOrderQty: null, // Bulk actions don't modify these fields
+      abmDiscountType: null,
+      abmDiscountValue: null,
+      abmRemarks: null, // Bulk actions are not escalations
+      abmReviewedBy: username,
+      abmReviewedAt: timestamp
+    };
+
+    const result = await sendToDiscountUpdateWebhook(payload);
     
     if (result.success) {
       const newResults: Record<string, ActionResult> = {};
