@@ -54,11 +54,15 @@ export const useActionHandler = () => {
     const username = localStorage.getItem("asgard_username") || "";
     
     // Map actions to the expected status values
-    const statusMap = {
+    const statusMap: Record<string, string> = {
       'ACCEPTED': 'ACCEPTED',
       'REJECTED': 'REJECTED', 
       'MODIFIED': 'MODIFIED',
-      'ESCALATED': 'ESCALATED'
+      'ESCALATED': 'ESCALATED',
+      'Accept': 'ACCEPTED',
+      'Reject': 'REJECTED',
+      'Modify': 'MODIFIED',
+      'Escalate': 'ESCALATED'
     };
 
     const payload = {
@@ -112,9 +116,11 @@ export const useActionHandler = () => {
     const username = localStorage.getItem("asgard_username") || "";
     
     // Map actions to the expected status values
-    const statusMap = {
+    const statusMap: Record<string, string> = {
       'ACCEPTED': 'ACCEPTED',
-      'REJECTED': 'REJECTED'
+      'REJECTED': 'REJECTED',
+      'Accept': 'ACCEPTED',
+      'Reject': 'REJECTED'
     };
 
     const payload = {
