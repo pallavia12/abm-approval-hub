@@ -29,10 +29,11 @@ export const useActionHandler = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      return { success: true };
+      const responseData = await response.json();
+      return { success: responseData.success, data: responseData, error: responseData.success ? null : responseData.message };
     } catch (error) {
       console.error('Error sending to discount update webhook:', error);
-      return { success: false, error };
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   };
 
@@ -101,7 +102,7 @@ export const useActionHandler = () => {
     } else {
       toast({
         title: "Action Failed",
-        description: `Failed to ${action.toLowerCase()} request ${requestId}`,
+        description: result.error || `Failed to ${action.toLowerCase()} request ${requestId}`,
         variant: "destructive"
       });
     }
@@ -164,7 +165,7 @@ export const useActionHandler = () => {
     } else {
       toast({
         title: "Bulk Action Failed",
-        description: `Failed to ${action.toLowerCase()} selected requests`,
+        description: result.error || `Failed to ${action.toLowerCase()} selected requests`,
         variant: "destructive"
       });
     }

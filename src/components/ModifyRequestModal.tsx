@@ -91,8 +91,9 @@ const ModifyRequestModal = ({ isOpen, onClose, onConfirm, requestId, currentData
                 <SelectValue placeholder={currentData.discountType} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Percentage">Percentage</SelectItem>
-                <SelectItem value="Fixed Amount">Fixed Amount</SelectItem>
+                <SelectItem value="Re 1 per kg">Re 1 per kg</SelectItem>
+                <SelectItem value="Rs 0.75 per kg">Rs 0.75 per kg</SelectItem>
+                <SelectItem value="Custom">Custom</SelectItem>
               </SelectContent>
             </Select>
           </div>

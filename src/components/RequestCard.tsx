@@ -195,7 +195,7 @@ export const RequestCard = ({
           </div>
           <div>
             <h4 className="font-medium text-sm text-muted-foreground mb-1">Requested Date</h4>
-            <div className="text-sm">{request.createdAt}</div>
+            <div className="text-sm">{new Date(request.createdAt).toISOString().slice(0, 19).replace('T', ' ')}</div>
           </div>
         </div>
 
