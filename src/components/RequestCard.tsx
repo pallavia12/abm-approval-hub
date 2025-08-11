@@ -21,6 +21,12 @@ interface ApprovalRequest {
   ABM_Id: number;
   ABM_UserName: string;
   createdAt: string;
+  abmStatus?: string | null;
+  abmReveiwedAt?: string;
+  abmOrderQty?: number;
+  abmDiscountValue?: number;
+  abmDiscountType?: string;
+  abmRemarks?: string;
 }
 
 interface RequestCardProps {
@@ -42,8 +48,44 @@ export const RequestCard = ({
   actionTaken,
   bulkModeActive,
 }: RequestCardProps) => {
+  // Calculate TAT if abmStatus exists and abmReveiwedAt is available
+  const calculateAbmTAT = () => {
+    if (request.abmStatus && request.abmReveiwedAt) {
+      const createdAt = new Date(request.createdAt);
+      const reviewedAt = new Date(request.abmReveiwedAt);
+      const diffInMs = reviewedAt.getTime() - createdAt.getTime();
+      const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+      const diffInMinutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
+      return `${diffInHours}h ${diffInMinutes}m`;
+    }
+    return null;
+  };
+
   const renderActionButtons = () => {
-    const disabled = isDisabled || bulkModeActive;
+    // If abmStatus exists (not null), disable all actions
+    const disabled = isDisabled || bulkModeActive || (request.abmStatus !== null);
+
+    // Show abmStatus information if it exists
+    if (request.abmStatus) {
+      const abmTAT = calculateAbmTAT();
+      return (
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="secondary" className="text-xs">
+            {request.abmStatus}
+          </Badge>
+          {abmTAT && (
+            <Badge variant="outline" className="text-xs">
+              TAT: {abmTAT}
+            </Badge>
+          )}
+          {request.abmStatus === 'ESCALATED' && request.abmRemarks && (
+            <div className="text-xs text-muted-foreground mt-1">
+              Remarks: {request.abmRemarks}
+            </div>
+          )}
+        </div>
+      );
+    }
 
     if (actionTaken) {
       const getActionPastTense = (action: string) => {
@@ -163,7 +205,12 @@ export const RequestCard = ({
           </div>
           <div>
             <h4 className="font-medium text-sm text-muted-foreground mb-1">Order</h4>
-            <div className="text-sm font-medium">{request.orderQty} kg</div>
+            <div className="text-sm font-medium">
+              {/* Show abmOrderQty if available and not 0, otherwise show original orderQty */}
+              {request.abmStatus === 'MODIFIED' && request.abmOrderQty && request.abmOrderQty !== 0 
+                ? request.abmOrderQty 
+                : request.orderQty} kg
+            </div>
             {request.skuId && (
               <div className="text-xs text-muted-foreground">SKU ID: {request.skuId}</div>
             )}
@@ -174,7 +221,14 @@ export const RequestCard = ({
         <div>
           <h4 className="font-medium text-sm text-muted-foreground mb-1">Discount</h4>
           <div className="text-sm">
-            {request.discountValue || 0} ({request.discountType})
+            {/* Show abm values if modified and available, otherwise show original */}
+            {request.abmStatus === 'MODIFIED' && request.abmDiscountValue && request.abmDiscountValue !== 0
+              ? request.abmDiscountValue
+              : (request.discountValue || 0)} 
+            {' '}
+            ({request.abmStatus === 'MODIFIED' && request.abmDiscountType && request.abmDiscountType.trim() !== ''
+              ? request.abmDiscountType
+              : request.discountType})
           </div>
         </div>
 

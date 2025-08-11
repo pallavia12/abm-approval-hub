@@ -30,6 +30,12 @@ interface ApprovalRequest {
   ABM_Id: number;
   ABM_UserName: string;
   createdAt: string;
+  abmStatus?: string | null;
+  abmReveiwedAt?: string;
+  abmOrderQty?: number;
+  abmDiscountValue?: number;
+  abmDiscountType?: string;
+  abmRemarks?: string;
 }
 
 interface Reportee {
