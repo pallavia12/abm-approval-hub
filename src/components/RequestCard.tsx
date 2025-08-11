@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 interface ApprovalRequest {
   requestId: number;
   eligible: 0 | 1;
+  eligibilityReason?: string;
   customerId: number;
   customerName: string;
   customerContact: number;
@@ -191,12 +192,19 @@ export const RequestCard = ({
             />
             <CardTitle className="text-lg">{request.requestId}</CardTitle>
           </div>
-          <Badge 
-            variant={request.eligible === 1 ? "default" : "destructive"}
-            className="text-xs"
-          >
-            {request.eligible === 1 ? "Eligible" : "Not Eligible"}
-          </Badge>
+          <div className="flex flex-col items-end gap-1">
+            <Badge 
+              variant={request.eligible === 1 ? "default" : "destructive"}
+              className="text-xs"
+            >
+              {request.eligible === 1 ? "Eligible" : "Not Eligible"}
+            </Badge>
+            {request.eligibilityReason && (
+              <div className="text-xs text-muted-foreground text-right max-w-[180px] break-words">
+                {request.eligibilityReason}
+              </div>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
