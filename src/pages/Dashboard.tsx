@@ -31,7 +31,7 @@ interface ApprovalRequest {
   ABM_UserName: string;
   createdAt: string;
   abmStatus?: string | null;
-  abmReveiwedAt?: string;
+  abmReviewedAt?: string;
   abmOrderQty?: number;
   abmDiscountValue?: number;
   abmDiscountType?: string;

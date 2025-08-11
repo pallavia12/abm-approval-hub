@@ -22,7 +22,7 @@ interface ApprovalRequest {
   ABM_UserName: string;
   createdAt: string;
   abmStatus?: string | null;
-  abmReveiwedAt?: string;
+  abmReviewedAt?: string;
   abmOrderQty?: number;
   abmDiscountValue?: number;
   abmDiscountType?: string;
@@ -48,29 +48,28 @@ export const RequestCard = ({
   actionTaken,
   bulkModeActive,
 }: RequestCardProps) => {
-  // Debug: Log the request object to see its structure
-  console.log('RequestCard - request object:', request);
-  console.log('RequestCard - abmStatus:', request.abmStatus);
-  console.log('RequestCard - abmReveiwedAt:', request.abmReveiwedAt);
-  // Calculate TAT if abmStatus exists and abmReveiwedAt is available
+  // Calculate TAT if abmStatus exists and abmReviewedAt is available
   const calculateAbmTAT = () => {
-    if (request.abmStatus && request.abmReveiwedAt) {
+    if (request.abmStatus && request.abmReviewedAt) {
       const createdAt = new Date(request.createdAt);
-      const reviewedAt = new Date(request.abmReveiwedAt);
+      const reviewedAt = new Date(request.abmReviewedAt);
       const diffInMs = reviewedAt.getTime() - createdAt.getTime();
-      const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-      const diffInMinutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
-      return `${diffInHours}h ${diffInMinutes}m`;
+      
+      const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diffInMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
+      
+      return `${days} days, ${hours} hours, ${minutes} minutes`;
     }
     return null;
   };
 
   const renderActionButtons = () => {
     // If abmStatus exists (not null), disable all actions
-    const disabled = isDisabled || bulkModeActive || (request.abmStatus !== null);
+    const disabled = isDisabled || bulkModeActive || (request.abmStatus !== null && request.abmStatus !== undefined);
 
-    // Show abmStatus information if it exists
-    if (request.abmStatus) {
+    // Show abmStatus information if it exists (not null or undefined)
+    if (request.abmStatus && request.abmStatus !== null) {
       const abmTAT = calculateAbmTAT();
       return (
         <div className="flex flex-col gap-2">
@@ -78,9 +77,9 @@ export const RequestCard = ({
             <Badge variant="secondary" className="text-xs">
               {request.abmStatus}
             </Badge>
-            {request.abmReveiwedAt && (
+            {request.abmReviewedAt && (
               <span className="text-xs text-muted-foreground">
-                {new Date(request.abmReveiwedAt).toLocaleString()}
+                {new Date(request.abmReviewedAt).toLocaleString()}
               </span>
             )}
             {abmTAT && (
