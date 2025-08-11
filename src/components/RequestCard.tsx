@@ -79,7 +79,7 @@ export const RequestCard = ({
             </Badge>
             {request.abmReviewedAt && (
               <span className="text-xs text-muted-foreground">
-                {new Date(request.abmReviewedAt).toLocaleDateString()} {new Date(request.abmReviewedAt).toLocaleTimeString()}
+                {request.abmReviewedAt.replace('T', ' ').slice(0, 19)}
               </span>
             )}
             {abmTAT && (
