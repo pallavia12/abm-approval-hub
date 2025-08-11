@@ -79,7 +79,7 @@ export const RequestCard = ({
             </Badge>
             {request.abmReviewedAt && (
               <span className="text-xs text-muted-foreground">
-                {new Date(request.abmReviewedAt).toLocaleString()}
+                {new Date(request.abmReviewedAt).toLocaleDateString()} {new Date(request.abmReviewedAt).toLocaleTimeString()}
               </span>
             )}
             {abmTAT && (
@@ -187,7 +187,7 @@ export const RequestCard = ({
               onCheckedChange={(checked) => 
                 onSelectionChange(request.requestId, checked as boolean)
               }
-              disabled={isDisabled}
+              disabled={isDisabled || (request.abmStatus !== null && request.abmStatus !== undefined)}
             />
             <CardTitle className="text-lg">{request.requestId}</CardTitle>
           </div>

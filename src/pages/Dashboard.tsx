@@ -316,7 +316,11 @@ const Dashboard = () => {
 
   // Bulk action handlers
   const handleSelectAll = () => {
-    const eligibleRequests = paginatedRequests.filter(r => r?.requestId && !isActionDisabled(r.requestId.toString()));
+    const eligibleRequests = paginatedRequests.filter(r => 
+      r?.requestId && 
+      !isActionDisabled(r.requestId.toString()) && 
+      (r.abmStatus === null || r.abmStatus === undefined)
+    );
     setSelectedRequests(eligibleRequests.map(r => r.requestId));
   };
 
@@ -327,7 +331,9 @@ const Dashboard = () => {
   const handleBulkAccept = async () => {
     const eligibleSelected = selectedRequests.filter(id => {
       const request = requests.find(r => r.requestId === id);
-      return request?.eligible === 1 && !isActionDisabled(id.toString());
+      return request?.eligible === 1 && 
+             !isActionDisabled(id.toString()) && 
+             (request.abmStatus === null || request.abmStatus === undefined);
     });
     
     if (eligibleSelected.length > 0) {
@@ -345,7 +351,11 @@ const Dashboard = () => {
   };
 
   const handleBulkReject = async () => {
-    const eligibleSelected = selectedRequests.filter(id => !isActionDisabled(id.toString()));
+    const eligibleSelected = selectedRequests.filter(id => {
+      const request = requests.find(r => r.requestId === id);
+      return !isActionDisabled(id.toString()) && 
+             (request?.abmStatus === null || request?.abmStatus === undefined);
+    });
     
     if (eligibleSelected.length > 0) {
       const createdAtMap: Record<string, string> = {};
@@ -362,6 +372,12 @@ const Dashboard = () => {
   };
 
   const handleCheckboxChange = (requestId: number, checked: boolean) => {
+    // Don't allow selection if abmStatus is not null
+    const request = requests.find(r => r.requestId === requestId);
+    if (request?.abmStatus !== null && request?.abmStatus !== undefined) {
+      return;
+    }
+    
     if (checked) {
       setSelectedRequests(prev => [...prev, requestId]);
     } else {
@@ -448,7 +464,11 @@ const Dashboard = () => {
         {/* Bulk Action Bar */}
         <BulkActionBar
           selectedRequests={selectedRequests.map(id => id.toString())}
-          totalRequests={paginatedRequests.filter(r => r?.requestId && !isActionDisabled(r.requestId.toString())).length}
+          totalRequests={paginatedRequests.filter(r => 
+            r?.requestId && 
+            !isActionDisabled(r.requestId.toString()) && 
+            (r.abmStatus === null || r.abmStatus === undefined)
+          ).length}
           onSelectAll={handleSelectAll}
           onDeselectAll={handleDeselectAll}
           onBulkAccept={handleBulkAccept}
@@ -509,16 +529,16 @@ const Dashboard = () => {
             <div className="grid gap-4">
               {paginatedRequests.map((request) => (
                 request?.requestId ? (
-                  <RequestCard
-                    key={request.requestId}
-                    request={request}
-                    isSelected={selectedRequests.includes(request.requestId)}
-                    isDisabled={isActionDisabled(request.requestId.toString())}
-                    onSelectionChange={handleCheckboxChange}
-                    onAction={handleAction}
-                    actionTaken={getActionTaken(request.requestId.toString())}
-                    bulkModeActive={selectedRequests.length > 0}
-                  />
+              <RequestCard
+                key={request.requestId}
+                request={request}
+                isSelected={selectedRequests.includes(request.requestId)}
+                isDisabled={isActionDisabled(request.requestId.toString()) || (request.abmStatus !== null && request.abmStatus !== undefined)}
+                onSelectionChange={handleCheckboxChange}
+                onAction={handleAction}
+                actionTaken={getActionTaken(request.requestId.toString())}
+                bulkModeActive={selectedRequests.length > 0}
+              />
                 ) : null
               )).filter(Boolean)}
             </div>
