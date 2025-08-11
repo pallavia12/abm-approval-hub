@@ -261,7 +261,7 @@ const Dashboard = () => {
   };
 
   const handleAction = async (requestId: number, action: string) => {
-    if (action === "MODIFIED") {
+    if (action === "Modify") {
       const request = requests.find(r => r.requestId === requestId);
       if (request) {
         setSelectedRequest(request);
@@ -270,7 +270,7 @@ const Dashboard = () => {
       return;
     }
     
-    if (action === "ESCALATED") {
+    if (action === "Escalate") {
       const request = requests.find(r => r.requestId === requestId);
       if (request) {
         setSelectedRequest(request);

@@ -31,6 +31,11 @@ const ModifyRequestModal = ({ isOpen, onClose, onConfirm, requestId, currentData
   const hasChanges = orderKg.trim() !== "" || discountType !== "" || discountValue.trim() !== "";
 
   const handleConfirm = () => {
+    // Validation: at least one field must be modified
+    if (!hasChanges) {
+      return;
+    }
+
     const modifyData: ModifyData = {};
     
     if (orderKg.trim() !== "") {
