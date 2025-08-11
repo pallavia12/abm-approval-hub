@@ -69,18 +69,25 @@ export const RequestCard = ({
     if (request.abmStatus) {
       const abmTAT = calculateAbmTAT();
       return (
-        <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="secondary" className="text-xs">
-            {request.abmStatus}
-          </Badge>
-          {abmTAT && (
-            <Badge variant="outline" className="text-xs">
-              TAT: {abmTAT}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="secondary" className="text-xs">
+              {request.abmStatus}
             </Badge>
-          )}
+            {request.abmReveiwedAt && (
+              <span className="text-xs text-muted-foreground">
+                {new Date(request.abmReveiwedAt).toLocaleString()}
+              </span>
+            )}
+            {abmTAT && (
+              <Badge variant="outline" className="text-xs">
+                TAT: {abmTAT}
+              </Badge>
+            )}
+          </div>
           {request.abmStatus === 'ESCALATED' && request.abmRemarks && (
-            <div className="text-xs text-muted-foreground mt-1">
-              Remarks: {request.abmRemarks}
+            <div className="text-xs text-muted-foreground">
+              <strong>Remarks:</strong> {request.abmRemarks}
             </div>
           )}
         </div>
