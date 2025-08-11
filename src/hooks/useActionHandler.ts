@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 
 export interface ActionResult {
   requestId: string;
-  action: 'Accept' | 'Reject' | 'Modify' | 'Escalate';
+  action: 'ACCEPTED' | 'REJECTED' | 'MODIFIED' | 'ESCALATED';
   timestamp: string;
   disabled: boolean;
   tatTime?: string;
@@ -47,7 +47,7 @@ export const useActionHandler = () => {
     return `${diffHours} hours, ${diffMins} mins`;
   };
 
-  const executeAction = async (requestId: string, action: 'Accept' | 'Reject' | 'Modify' | 'Escalate', additionalData?: any) => {
+  const executeAction = async (requestId: string, action: 'ACCEPTED' | 'REJECTED' | 'MODIFIED' | 'ESCALATED', additionalData?: any) => {
     const now = new Date();
     const timestamp = now.toISOString();
     const formattedTimestamp = format(now, 'yyyy:MM:dd HH:mm:ss');
@@ -55,19 +55,19 @@ export const useActionHandler = () => {
     
     // Map actions to the expected status values
     const statusMap = {
-      'Accept': 'Approve',
-      'Reject': 'Reject', 
-      'Modify': 'Modify',
-      'Escalate': 'Escalate'
+      'ACCEPTED': 'Approve',
+      'REJECTED': 'Reject', 
+      'MODIFIED': 'Modify',
+      'ESCALATED': 'Escalate'
     };
 
     const payload = {
       ids: [parseInt(requestId)],
       abmStatus: statusMap[action],
-      abmOrderQty: action === 'Modify' ? additionalData?.orderKg || null : null,
-      abmDiscountType: action === 'Modify' ? additionalData?.discountType || null : null,
-      abmDiscountValue: action === 'Modify' ? additionalData?.discountValue || null : null,
-      abmRemarks: action === 'Escalate' ? additionalData?.remarks || null : null,
+      abmOrderQty: action === 'MODIFIED' ? additionalData?.orderKg || null : null,
+      abmDiscountType: action === 'MODIFIED' ? additionalData?.discountType || null : null,
+      abmDiscountValue: action === 'MODIFIED' ? additionalData?.discountValue || null : null,
+      abmRemarks: action === 'ESCALATED' ? additionalData?.remarks || null : null,
       abmReviewedBy: username,
       abmReviewedAt: formattedTimestamp
     };
@@ -105,7 +105,7 @@ export const useActionHandler = () => {
     return result;
   };
 
-  const executeBulkAction = async (requestIds: string[], action: 'Accept' | 'Reject', additionalData?: any) => {
+  const executeBulkAction = async (requestIds: string[], action: 'ACCEPTED' | 'REJECTED', additionalData?: any) => {
     const now = new Date();
     const timestamp = now.toISOString();
     const formattedTimestamp = format(now, 'yyyy:MM:dd HH:mm:ss');
@@ -113,8 +113,8 @@ export const useActionHandler = () => {
     
     // Map actions to the expected status values
     const statusMap = {
-      'Accept': 'Approve',
-      'Reject': 'Reject'
+      'ACCEPTED': 'Approve',
+      'REJECTED': 'Reject'
     };
 
     const payload = {
