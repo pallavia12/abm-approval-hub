@@ -270,7 +270,7 @@ const Dashboard = () => {
       return;
     }
     
-    if (action === "Escalate") {
+    if (action === "ESCALATED") {
       const request = requests.find(r => r.requestId === requestId);
       if (request) {
         setSelectedRequest(request);
@@ -280,7 +280,7 @@ const Dashboard = () => {
     }
 
     const request = requests.find(r => r.requestId === requestId);
-    await executeAction(requestId.toString(), action as 'Accept' | 'Reject', { createdAt: request?.createdAt });
+    await executeAction(requestId.toString(), action as 'ACCEPTED' | 'REJECTED', { createdAt: request?.createdAt });
   };
 
   const handleModifyConfirm = async (modifyData: ModifyData) => {
@@ -333,7 +333,7 @@ const Dashboard = () => {
         }
       });
       
-      await executeBulkAction(eligibleSelected.map(id => id.toString()), 'Accept', { createdAtMap });
+      await executeBulkAction(eligibleSelected.map(id => id.toString()), 'ACCEPTED', { createdAtMap });
       setSelectedRequests([]);
     }
   };
@@ -350,7 +350,7 @@ const Dashboard = () => {
         }
       });
       
-      await executeBulkAction(eligibleSelected.map(id => id.toString()), 'Reject', { createdAtMap });
+      await executeBulkAction(eligibleSelected.map(id => id.toString()), 'REJECTED', { createdAtMap });
       setSelectedRequests([]);
     }
   };
