@@ -261,7 +261,7 @@ const Dashboard = () => {
   };
 
   const handleAction = async (requestId: number, action: string) => {
-    if (action === "Modify") {
+    if (action === "MODIFIED") {
       const request = requests.find(r => r.requestId === requestId);
       if (request) {
         setSelectedRequest(request);
@@ -299,13 +299,13 @@ const Dashboard = () => {
     });
 
     setRequests(updatedRequests);
-    await executeAction(selectedRequest.requestId.toString(), 'Modify', { ...modifyData, createdAt: selectedRequest.createdAt });
+    await executeAction(selectedRequest.requestId.toString(), 'MODIFIED', { ...modifyData, createdAt: selectedRequest.createdAt });
   };
 
   const handleEscalateConfirm = async (remarks: string) => {
     if (!selectedRequest) return;
 
-    await executeAction(selectedRequest.requestId.toString(), 'Escalate', { remarks, createdAt: selectedRequest.createdAt });
+    await executeAction(selectedRequest.requestId.toString(), 'ESCALATED', { remarks, createdAt: selectedRequest.createdAt });
   };
 
   // Bulk action handlers
