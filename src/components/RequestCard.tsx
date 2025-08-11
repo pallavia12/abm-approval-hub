@@ -48,6 +48,10 @@ export const RequestCard = ({
   actionTaken,
   bulkModeActive,
 }: RequestCardProps) => {
+  // Debug: Log the request object to see its structure
+  console.log('RequestCard - request object:', request);
+  console.log('RequestCard - abmStatus:', request.abmStatus);
+  console.log('RequestCard - abmReveiwedAt:', request.abmReveiwedAt);
   // Calculate TAT if abmStatus exists and abmReveiwedAt is available
   const calculateAbmTAT = () => {
     if (request.abmStatus && request.abmReveiwedAt) {
