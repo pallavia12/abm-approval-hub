@@ -55,10 +55,10 @@ export const useActionHandler = () => {
     
     // Map actions to the expected status values
     const statusMap = {
-      'ACCEPTED': 'Approve',
-      'REJECTED': 'Reject', 
-      'MODIFIED': 'Modify',
-      'ESCALATED': 'Escalate'
+      'ACCEPTED': 'ACCEPTED',
+      'REJECTED': 'REJECTED', 
+      'MODIFIED': 'MODIFIED',
+      'ESCALATED': 'ESCALATED'
     };
 
     const payload = {
@@ -113,8 +113,8 @@ export const useActionHandler = () => {
     
     // Map actions to the expected status values
     const statusMap = {
-      'ACCEPTED': 'Approve',
-      'REJECTED': 'Reject'
+      'ACCEPTED': 'ACCEPTED',
+      'REJECTED': 'REJECTED'
     };
 
     const payload = {
