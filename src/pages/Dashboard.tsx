@@ -48,7 +48,8 @@ interface Reportee {
 // API Configuration
 const getApiUrl = () => {
   // Use the actual webhook URL you specified
-  return import.meta.env.VITE_API_URL || "http://localhost:5678/webhook-test/fetch-requests";
+  return import.meta.env.VITE_API_URL || "https://ninjasndanalytics.app.n8n.cloud/webhook-test/fetch-requests";
+    //"http://localhost:5678/webhook-test/fetch-requests";
 };
 
 const Dashboard = () => {
@@ -85,8 +86,10 @@ const Dashboard = () => {
     const fetchData = async () => {
       console.log(`[Dashboard.tsx:79] Starting sequential data fetch for user: ${asgardUsername}`);
       console.log('API URLs:', {
-        requests: 'http://localhost:5678/webhook-test/fetch-requests',
-        reportees: 'http://localhost:5678/webhook-test/get-reportees'
+        requests: 'https://ninjasndanalytics.app.n8n.cloud/webhook-test/fetch-requests',
+          //'http://localhost:5678/webhook-test/fetch-requests',
+        reportees: 'https://ninjasndanalytics.app.n8n.cloud/webhook-test/get-reportees'
+      //'http://localhost:5678/webhook-test/get-reportees'
       });
       
       setIsLoading(true);
@@ -103,7 +106,8 @@ const Dashboard = () => {
       // Fetch requests first
       try {
         console.log('[Dashboard.tsx] Fetching approval requests...');
-        const requestsResponse = await fetch(`http://localhost:5678/webhook-test/fetch-requests`, {
+        const requestsResponse = await fetch(`https://ninjasndanalytics.app.n8n.cloud/webhook-test/fetch-requests`, {
+          //`http://localhost:5678/webhook-test/fetch-requests`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username: asgardUsername }),
@@ -136,7 +140,8 @@ const Dashboard = () => {
       // Fetch reportees second, independently of requests result
       try {
         console.log('[Dashboard.tsx] Fetching reportees...');
-        const reporteesResponse = await fetch(`http://localhost:5678/webhook-test/get-reportees`, {
+        const reporteesResponse = await fetch(`https://ninjasndanalytics.app.n8n.cloud/webhook-test/get-reportees`, {
+          //`http://localhost:5678/webhook-test/get-reportees`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
