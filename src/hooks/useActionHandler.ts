@@ -19,7 +19,7 @@ export const useActionHandler = () => {
     console.log('Sending to discount update webhook:', data);
     
     try {
-      const response = await fetch('https://ninjasndanalytics.app.n8n.cloud/webhook-test/update-discount-request', {
+      const response = await fetch('https://ninjasndanalytics.app.n8n.cloud/webhook/update-discount-request', {
         //'http://localhost:5678/webhook-test/update-discount-request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
