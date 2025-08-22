@@ -39,12 +39,23 @@ export const useActionHandler = () => {
   };
 
   const calculateTAT = (createdAt: string, actionTimestamp: string): string => {
+    console.log('TAT Calculation Debug:', { createdAt, actionTimestamp });
+    
     const createdDate = new Date(createdAt);
     const actionDate = new Date(actionTimestamp);
+    
+    console.log('Parsed dates:', { 
+      createdDate: createdDate.toISOString(), 
+      actionDate: actionDate.toISOString(),
+      createdTime: createdDate.getTime(),
+      actionTime: actionDate.getTime()
+    });
     
     const diffMs = actionDate.getTime() - createdDate.getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    console.log('TAT calculation result:', { diffMs, diffHours, diffMins });
     
     return `${diffHours} hours, ${diffMins} mins`;
   };
