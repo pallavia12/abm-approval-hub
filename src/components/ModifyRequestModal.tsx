@@ -19,7 +19,7 @@ interface ModifyRequestModalProps {
 
 export interface ModifyData {
   orderKg?: number;
-  discountType?: string;
+  discountType?: string | null;
   discountValue?: number;
 }
 
@@ -29,10 +29,17 @@ const ModifyRequestModal = ({ isOpen, onClose, onConfirm, requestId, currentData
   const [discountValue, setDiscountValue] = useState<string>("");
 
   const hasChanges = orderKg.trim() !== "" || discountType !== "" || discountValue.trim() !== "";
+  const isCustomDiscount = discountType === "Custom";
+  const isDiscountValueRequired = isCustomDiscount;
 
   const handleConfirm = () => {
     // Validation: at least one field must be modified
     if (!hasChanges) {
+      return;
+    }
+
+    // Validation: if discount type is Custom, discount value is required
+    if (isCustomDiscount && discountValue.trim() === "") {
       return;
     }
 
@@ -41,9 +48,14 @@ const ModifyRequestModal = ({ isOpen, onClose, onConfirm, requestId, currentData
     if (orderKg.trim() !== "") {
       modifyData.orderKg = parseFloat(orderKg);
     }
+    
+    // Send discount type only if it's changed, otherwise send null
     if (discountType !== "") {
       modifyData.discountType = discountType;
+    } else {
+      modifyData.discountType = null;
     }
+    
     if (discountValue.trim() !== "") {
       modifyData.discountValue = parseFloat(discountValue);
     }
@@ -114,6 +126,8 @@ const ModifyRequestModal = ({ isOpen, onClose, onConfirm, requestId, currentData
               onChange={(e) => setDiscountValue(e.target.value)}
               placeholder={currentData.discountValue.toString()}
               className="col-span-3"
+              disabled={!isCustomDiscount}
+              required={isDiscountValueRequired}
             />
           </div>
         </div>
@@ -122,7 +136,10 @@ const ModifyRequestModal = ({ isOpen, onClose, onConfirm, requestId, currentData
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={!hasChanges}>
+          <Button 
+            onClick={handleConfirm} 
+            disabled={!hasChanges || (isCustomDiscount && discountValue.trim() === "")}
+          >
             Confirm
           </Button>
         </DialogFooter>
