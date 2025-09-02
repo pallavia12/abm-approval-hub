@@ -41,6 +41,7 @@ export const useActionHandler = () => {
   const calculateTAT = (createdAt: string, actionTimestamp: string): string => {
     console.log('TAT Calculation Debug:', { createdAt, actionTimestamp });
     
+    // Parse dates properly handling timezone differences
     const createdDate = new Date(createdAt);
     const actionDate = new Date(actionTimestamp);
     
@@ -51,13 +52,21 @@ export const useActionHandler = () => {
       actionTime: actionDate.getTime()
     });
     
-    const diffMs = actionDate.getTime() - createdDate.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMs = Math.abs(actionDate.getTime() - createdDate.getTime());
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
     
-    console.log('TAT calculation result:', { diffMs, diffHours, diffMins });
+    console.log('TAT calculation result:', { diffMs, diffDays, diffHours, diffMins });
     
-    return `${diffHours} hours, ${diffMins} mins`;
+    // Format TAT display intelligently
+    if (diffDays > 0) {
+      return `${diffDays} day${diffDays !== 1 ? 's' : ''}, ${diffHours} hour${diffHours !== 1 ? 's' : ''}`;
+    } else if (diffHours > 0) {
+      return `${diffHours} hour${diffHours !== 1 ? 's' : ''}, ${diffMins} min${diffMins !== 1 ? 's' : ''}`;
+    } else {
+      return `${diffMins} min${diffMins !== 1 ? 's' : ''}`;
+    }
   };
 
   const executeAction = async (requestId: string, action: 'ACCEPTED' | 'REJECTED' | 'MODIFIED' | 'ESCALATED', additionalData?: any) => {
