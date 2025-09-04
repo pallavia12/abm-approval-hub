@@ -12,7 +12,9 @@ interface ApprovalRequest {
   customerContact: number;
   campaignType: string;
   skuId?: number;
+  skuName?: string;
   orderQty: number;
+  orderMode?: number;
   discountValue: number | null;
   discountType: string;
   reason?: string;
@@ -220,6 +222,12 @@ export const RequestCard = ({
           <div>
             <h4 className="font-medium text-sm text-muted-foreground mb-1">Campaign</h4>
             <div className="text-sm">{request.campaignType}</div>
+            {request.campaignType === 'SKU Promotion' && (request.skuId || request.skuName) && (
+              <div className="text-xs text-muted-foreground mt-1">
+                {request.skuId && <div>SKU ID: {request.skuId}</div>}
+                {request.skuName && <div>SKU Name: {request.skuName}</div>}
+              </div>
+            )}
           </div>
           <div>
             <h4 className="font-medium text-sm text-muted-foreground mb-1">Order</h4>
@@ -229,8 +237,10 @@ export const RequestCard = ({
                 ? request.abmOrderQty 
                 : request.orderQty} kg
             </div>
-            {request.skuId && (
-              <div className="text-xs text-muted-foreground">SKU ID: {request.skuId}</div>
+            {request.orderMode && (
+              <div className="text-xs text-muted-foreground">
+                {request.orderMode === 1 ? 'Delivery' : request.orderMode === 2 ? 'Pickup' : `Mode: ${request.orderMode}`}
+              </div>
             )}
           </div>
         </div>
