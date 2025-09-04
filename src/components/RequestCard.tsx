@@ -107,7 +107,7 @@ export const RequestCard = ({
           case 'Reject': return 'Rejected';
           case 'Modify': return 'Modified';
           case 'Escalate': return 'Escalated';
-          default: return `${action}ed`;
+          default: return `${action}`;
         }
       };
 
