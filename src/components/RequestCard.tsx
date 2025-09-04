@@ -222,9 +222,9 @@ export const RequestCard = ({
           <div>
             <h4 className="font-medium text-sm text-muted-foreground mb-1">Campaign</h4>
             <div className="text-sm">{request.campaignType}</div>
-            {request.campaignType === 'SKU Promotion' && (request.skuId || request.skuName) && (
+            {request.campaignType.toLowerCase().includes('sku promotion') && (request.skuId || request.skuName) && (
               <div className="text-xs text-muted-foreground mt-1">
-                {request.skuId && <div>SKU ID: {request.skuId}</div>}
+                {request.skuId && request.skuId !== 0 && <div>SKU ID: {request.skuId}</div>}
                 {request.skuName && <div>SKU Name: {request.skuName}</div>}
               </div>
             )}
