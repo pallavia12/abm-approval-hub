@@ -11,7 +11,6 @@ import { useActionHandler } from "@/hooks/useActionHandler";
 import { RequestCard } from "@/components/RequestCard";
 import { SearchAndFilters } from "@/components/SearchAndFilters";
 import { Pagination } from "@/components/Pagination";
-
 interface ApprovalRequest {
   requestId: number;
   eligible: 0 | 1;
@@ -37,7 +36,6 @@ interface ApprovalRequest {
   abmDiscountType?: string;
   abmRemarks?: string;
 }
-
 interface Reportee {
   SE_Id: number;
   SE_UserName: string;
@@ -49,9 +47,8 @@ interface Reportee {
 const getApiUrl = () => {
   // Use the actual webhook URL you specified
   return import.meta.env.VITE_API_URL || "https://ninjasndanalytics.app.n8n.cloud/webhook/fetch-requests";
-    //"http://localhost:5678/webhook-test/fetch-requests";
+  //"http://localhost:5678/webhook-test/fetch-requests";
 };
-
 const Dashboard = () => {
   const [requests, setRequests] = useState<ApprovalRequest[]>([]);
   const [reportees, setReportees] = useState<Reportee[]>([]);
@@ -66,14 +63,19 @@ const Dashboard = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
   const [debugData, setDebugData] = useState<any>(null);
   const [showDebug, setShowDebug] = useState(false);
   const requestsPerPage = 10;
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { executeAction, executeBulkAction, isActionDisabled, getActionTaken } = useActionHandler();
-
+  const {
+    toast
+  } = useToast();
+  const {
+    executeAction,
+    executeBulkAction,
+    isActionDisabled,
+    getActionTaken
+  } = useActionHandler();
   useEffect(() => {
     const asgardUsername = localStorage.getItem("asgard_username");
     if (!asgardUsername) {
@@ -87,48 +89,51 @@ const Dashboard = () => {
       console.log(`[Dashboard.tsx:79] Starting sequential data fetch for user: ${asgardUsername}`);
       console.log('API URLs:', {
         requests: 'https://ninjasndanalytics.app.n8n.cloud/webhook/fetch-requests',
-          //'http://localhost:5678/webhook-test/fetch-requests',
+        //'http://localhost:5678/webhook-test/fetch-requests',
         reportees: 'https://ninjasndanalytics.app.n8n.cloud/webhook/get-reportees'
-      //'http://localhost:5678/webhook-test/get-reportees'
+        //'http://localhost:5678/webhook-test/get-reportees'
       });
-      
       setIsLoading(true);
       setError(null);
-      
       let requestsSuccess = false;
       let reporteesSuccess = false;
       const errors: string[] = [];
-      
+
       // Initialize with empty arrays for graceful degradation
       let processedRequests: ApprovalRequest[] = [];
       let processedReportees: Reportee[] = [];
-      
+
       // Fetch requests first
       try {
         console.log('[Dashboard.tsx] Fetching approval requests...');
         const requestsResponse = await fetch(`https://ninjasndanalytics.app.n8n.cloud/webhook/fetch-requests`, {
           //`http://localhost:5678/webhook-test/fetch-requests`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username: asgardUsername }),
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            username: asgardUsername
+          })
         });
-        
         if (!requestsResponse.ok) {
           throw new Error(`Failed to fetch requests: ${requestsResponse.status} ${requestsResponse.statusText}`);
         }
-        
         const requestsData = await requestsResponse.json();
-        
+
         // Process requests - handle direct array response
         if (Array.isArray(requestsData)) {
           processedRequests = requestsData as ApprovalRequest[];
         }
-        
         console.log(`[Dashboard.tsx] Successfully processed ${processedRequests.length} requests`);
         requestsSuccess = true;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        console.error(`[Dashboard.tsx] Failed to fetch requests:`, { error, errorMessage, username: asgardUsername });
+        console.error(`[Dashboard.tsx] Failed to fetch requests:`, {
+          error,
+          errorMessage,
+          username: asgardUsername
+        });
         errors.push(`Requests: ${errorMessage}`);
         toast({
           title: "Failed to fetch approval requests",
@@ -136,36 +141,35 @@ const Dashboard = () => {
           variant: "destructive"
         });
       }
-      
+
       // Fetch reportees second, independently of requests result
       try {
         console.log('[Dashboard.tsx] Fetching reportees...');
         const reporteesResponse = await fetch(`https://ninjasndanalytics.app.n8n.cloud/webhook/get-reportees`, {
           //`http://localhost:5678/webhook-test/get-reportees`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json"
+          },
           body: JSON.stringify({
             SE_Id: 35941,
             SE_UserName: "Kumarjk",
             ABM_Id: 2179814,
             ABM_UserName: asgardUsername
-          }),
+          })
         });
-        
         if (!reporteesResponse.ok) {
           throw new Error(`Failed to fetch reportees: ${reporteesResponse.status} ${reporteesResponse.statusText}`);
         }
-        
         const reporteesData = await reporteesResponse.json();
-        
+
         // Debug: Log the raw API response structure
         console.log('[Dashboard.tsx] Raw reportees API response:', reporteesData);
         console.log('[Dashboard.tsx] Response type:', typeof reporteesData);
         console.log('[Dashboard.tsx] Is array:', Array.isArray(reporteesData));
-        
+
         // Process reportees - handle different possible response structures
         let rawReportees = [];
-        
         if (Array.isArray(reporteesData)) {
           rawReportees = reporteesData;
         } else if (reporteesData && typeof reporteesData === 'object') {
@@ -187,24 +191,14 @@ const Dashboard = () => {
             }
           }
         }
-        
-        
         console.log('[Dashboard.tsx] Extracted raw reportees:', rawReportees);
         console.log('[Dashboard.tsx] Raw reportees count:', rawReportees.length);
-        
+
         // Now filter out invalid entries and create unique SE users
         if (Array.isArray(rawReportees) && rawReportees.length > 0) {
           // Log first few items to understand structure
           console.log('[Dashboard.tsx] First few raw reportees:', rawReportees.slice(0, 3));
-
-          
-        processedReportees = rawReportees
-  .filter(reportee => 
-    reportee && reportee.SE_UserName && reportee.SE_UserName.trim() !== ''
-  )
-  .filter((reportee, index, arr) => 
-    arr.findIndex(r => r.SE_UserName === reportee.SE_UserName) === index
-  );
+          processedReportees = rawReportees.filter(reportee => reportee && reportee.SE_UserName && reportee.SE_UserName.trim() !== '').filter((reportee, index, arr) => arr.findIndex(r => r.SE_UserName === reportee.SE_UserName) === index);
           /*
           processedReportees = rawReportees
             .filter(reportee => {
@@ -217,13 +211,16 @@ const Dashboard = () => {
             );
             */
         }
-        
         console.log(`[Dashboard.tsx] Successfully processed ${processedReportees.length} unique reportees with valid SE_UserName`);
         console.log('[Dashboard.tsx] Unique SE Users:', processedReportees.map(r => r.SE_UserName));
         reporteesSuccess = true;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        console.error(`[Dashboard.tsx] Failed to fetch reportees:`, { error, errorMessage, username: asgardUsername });
+        console.error(`[Dashboard.tsx] Failed to fetch reportees:`, {
+          error,
+          errorMessage,
+          username: asgardUsername
+        });
         errors.push(`Reportees: ${errorMessage}`);
         toast({
           title: "Failed to fetch reportees",
@@ -231,46 +228,46 @@ const Dashboard = () => {
           variant: "destructive"
         });
       }
-      
+
       // Set debug data with both successful and failed responses
-      setDebugData({ 
-        requests: requestsSuccess ? processedRequests : null, 
+      setDebugData({
+        requests: requestsSuccess ? processedRequests : null,
         reportees: reporteesSuccess ? processedReportees : null,
         errors: errors.length > 0 ? errors : null
       });
-      
+
       // Update state with whatever data we managed to fetch
       setRequests(processedRequests);
       setReportees(processedReportees);
-      
+
       // Set overall error state only if both APIs failed
       if (!requestsSuccess && !reporteesSuccess) {
         setError(`Both API calls failed: ${errors.join(', ')}`);
       } else if (errors.length > 0) {
         // Partial success - show warning but allow functionality
         setError(null); // Clear error to allow UI to function
-        console.warn('[Dashboard.tsx] Partial data load:', { errors, requestsCount: processedRequests.length, reporteesCount: processedReportees.length });
+        console.warn('[Dashboard.tsx] Partial data load:', {
+          errors,
+          requestsCount: processedRequests.length,
+          reporteesCount: processedReportees.length
+        });
       } else {
         // Full success
         setError(null);
         console.log(`[Dashboard.tsx] Successfully loaded all data: ${processedRequests.length} requests and ${processedReportees.length} reportees`);
       }
-      
       setIsLoading(false);
     };
-    
     fetchData();
   }, [navigate, toast]);
-
   const handleLogout = () => {
     localStorage.removeItem("asgard_username");
     toast({
       title: "Logged out",
-      description: "You have been logged out successfully",
+      description: "You have been logged out successfully"
     });
     navigate("/");
   };
-
   const handleAction = async (requestId: number, action: string) => {
     if (action === "Modify") {
       const request = requests.find(r => r.requestId === requestId);
@@ -280,7 +277,6 @@ const Dashboard = () => {
       }
       return;
     }
-    
     if (action === "Escalate") {
       const request = requests.find(r => r.requestId === requestId);
       if (request) {
@@ -289,58 +285,57 @@ const Dashboard = () => {
       }
       return;
     }
-
     const request = requests.find(r => r.requestId === requestId);
-    await executeAction(requestId.toString(), action as 'ACCEPTED' | 'REJECTED', { createdAt: request?.createdAt });
+    await executeAction(requestId.toString(), action as 'ACCEPTED' | 'REJECTED', {
+      createdAt: request?.createdAt
+    });
   };
-
   const handleModifyConfirm = async (modifyData: ModifyData) => {
     if (!selectedRequest) return;
-
     const updatedRequests = requests.map(request => {
       if (request.requestId === selectedRequest.requestId) {
         return {
           ...request,
-          ...(modifyData.orderKg !== undefined && { orderQty: modifyData.orderKg }),
-          ...(modifyData.discountType !== undefined && { discountType: modifyData.discountType }),
-          ...(modifyData.discountValue !== undefined && { discountValue: modifyData.discountValue }),
+          ...(modifyData.orderKg !== undefined && {
+            orderQty: modifyData.orderKg
+          }),
+          ...(modifyData.discountType !== undefined && {
+            discountType: modifyData.discountType
+          }),
+          ...(modifyData.discountValue !== undefined && {
+            discountValue: modifyData.discountValue
+          })
         };
       }
       return request;
     });
-
     setRequests(updatedRequests);
-    await executeAction(selectedRequest.requestId.toString(), 'MODIFIED', { ...modifyData, createdAt: selectedRequest.createdAt });
+    await executeAction(selectedRequest.requestId.toString(), 'MODIFIED', {
+      ...modifyData,
+      createdAt: selectedRequest.createdAt
+    });
   };
-
   const handleEscalateConfirm = async (remarks: string) => {
     if (!selectedRequest) return;
-
-    await executeAction(selectedRequest.requestId.toString(), 'ESCALATED', { remarks, createdAt: selectedRequest.createdAt });
+    await executeAction(selectedRequest.requestId.toString(), 'ESCALATED', {
+      remarks,
+      createdAt: selectedRequest.createdAt
+    });
   };
 
   // Bulk action handlers
   const handleSelectAll = () => {
-    const eligibleRequests = paginatedRequests.filter(r => 
-      r?.requestId && 
-      !isActionDisabled(r.requestId.toString()) && 
-      (r.abmStatus === null || r.abmStatus === undefined)
-    );
+    const eligibleRequests = paginatedRequests.filter(r => r?.requestId && !isActionDisabled(r.requestId.toString()) && (r.abmStatus === null || r.abmStatus === undefined));
     setSelectedRequests(eligibleRequests.map(r => r.requestId));
   };
-
   const handleDeselectAll = () => {
     setSelectedRequests([]);
   };
-
   const handleBulkAccept = async () => {
     const eligibleSelected = selectedRequests.filter(id => {
       const request = requests.find(r => r.requestId === id);
-      return request?.eligible === 1 && 
-             !isActionDisabled(id.toString()) && 
-             (request.abmStatus === null || request.abmStatus === undefined);
+      return request?.eligible === 1 && !isActionDisabled(id.toString()) && (request.abmStatus === null || request.abmStatus === undefined);
     });
-    
     if (eligibleSelected.length > 0) {
       const createdAtMap: Record<string, string> = {};
       eligibleSelected.forEach(id => {
@@ -349,19 +344,17 @@ const Dashboard = () => {
           createdAtMap[id.toString()] = request.createdAt;
         }
       });
-      
-      await executeBulkAction(eligibleSelected.map(id => id.toString()), 'ACCEPTED', { createdAtMap });
+      await executeBulkAction(eligibleSelected.map(id => id.toString()), 'ACCEPTED', {
+        createdAtMap
+      });
       setSelectedRequests([]);
     }
   };
-
   const handleBulkReject = async () => {
     const eligibleSelected = selectedRequests.filter(id => {
       const request = requests.find(r => r.requestId === id);
-      return !isActionDisabled(id.toString()) && 
-             (request?.abmStatus === null || request?.abmStatus === undefined);
+      return !isActionDisabled(id.toString()) && (request?.abmStatus === null || request?.abmStatus === undefined);
     });
-    
     if (eligibleSelected.length > 0) {
       const createdAtMap: Record<string, string> = {};
       eligibleSelected.forEach(id => {
@@ -370,19 +363,18 @@ const Dashboard = () => {
           createdAtMap[id.toString()] = request.createdAt;
         }
       });
-      
-      await executeBulkAction(eligibleSelected.map(id => id.toString()), 'REJECTED', { createdAtMap });
+      await executeBulkAction(eligibleSelected.map(id => id.toString()), 'REJECTED', {
+        createdAtMap
+      });
       setSelectedRequests([]);
     }
   };
-
   const handleCheckboxChange = (requestId: number, checked: boolean) => {
     // Don't allow selection if abmStatus is not null
     const request = requests.find(r => r.requestId === requestId);
     if (request?.abmStatus !== null && request?.abmStatus !== undefined) {
       return;
     }
-    
     if (checked) {
       setSelectedRequests(prev => [...prev, requestId]);
     } else {
@@ -392,19 +384,14 @@ const Dashboard = () => {
 
   // Filter requests based on search and BDM filter
   const filteredRequests = requests.filter(request => {
-    const matchesSearch = 
-      (request.customerId?.toString() || '').includes(searchQuery.toLowerCase()) ||
-      (request.customerName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (request.requestedByUserName || '').toLowerCase().includes(searchQuery.toLowerCase());
-
+    const matchesSearch = (request.customerId?.toString() || '').includes(searchQuery.toLowerCase()) || (request.customerName || '').toLowerCase().includes(searchQuery.toLowerCase()) || (request.requestedByUserName || '').toLowerCase().includes(searchQuery.toLowerCase());
     if (!matchesSearch) return false;
-
     if (selectedBdm === "all" || !selectedBdm) return true;
-    
+
     // Filter by SE users who can approve - check if the selected SE user manages the ABM
     const selectedReportee = reportees.find(r => r.SE_UserName === selectedBdm);
     if (!selectedReportee) return false;
-    
+
     // Check if the selected SE user manages the ABM of this request
     return request.ABM_UserName === selectedReportee.ABM_UserName;
   });
@@ -412,7 +399,7 @@ const Dashboard = () => {
   // Calculate pagination
   const totalFilteredRequests = filteredRequests.length;
   const calculatedTotalPages = Math.ceil(totalFilteredRequests / requestsPerPage);
-  
+
   // Update total pages when filtered requests change
   if (calculatedTotalPages !== totalPages) {
     setTotalPages(calculatedTotalPages);
@@ -425,9 +412,7 @@ const Dashboard = () => {
   const startIndex = (currentPage - 1) * requestsPerPage;
   const endIndex = startIndex + requestsPerPage;
   const paginatedRequests = filteredRequests.slice(startIndex, endIndex);
-
-  return (
-    <div className="min-h-screen bg-background p-4">
+  return <div className="min-h-screen bg-background p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
@@ -442,8 +427,7 @@ const Dashboard = () => {
         </div>
 
         {/* Debug Section */}
-        {showDebug && debugData && (
-          <Card className="mb-6">
+        {showDebug && debugData && <Card className="mb-6">
             <CardHeader>
               <CardTitle>Debug Information</CardTitle>
             </CardHeader>
@@ -454,31 +438,13 @@ const Dashboard = () => {
                 </pre>
               </div>
             </CardContent>
-          </Card>
-        )}
+          </Card>}
 
         {/* Search and Filters */}
-        <SearchAndFilters
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          seUsers={reportees}
-          selectedSeUser={selectedBdm}
-          onSeUserChange={setSelectedBdm}
-        />
+        <SearchAndFilters searchQuery={searchQuery} onSearchChange={setSearchQuery} seUsers={reportees} selectedSeUser={selectedBdm} onSeUserChange={setSelectedBdm} />
 
         {/* Bulk Action Bar */}
-        <BulkActionBar
-          selectedRequests={selectedRequests.map(id => id.toString())}
-          totalRequests={paginatedRequests.filter(r => 
-            r?.requestId && 
-            !isActionDisabled(r.requestId.toString()) && 
-            (r.abmStatus === null || r.abmStatus === undefined)
-          ).length}
-          onSelectAll={handleSelectAll}
-          onDeselectAll={handleDeselectAll}
-          onBulkAccept={handleBulkAccept}
-          onBulkReject={handleBulkReject}
-        />
+        <BulkActionBar selectedRequests={selectedRequests.map(id => id.toString())} totalRequests={paginatedRequests.filter(r => r?.requestId && !isActionDisabled(r.requestId.toString()) && (r.abmStatus === null || r.abmStatus === undefined)).length} onSelectAll={handleSelectAll} onDeselectAll={handleDeselectAll} onBulkAccept={handleBulkAccept} onBulkReject={handleBulkReject} />
 
         {/* Request Cards */}
         <div className="space-y-4">
@@ -487,103 +453,49 @@ const Dashboard = () => {
               Approval Requests ({totalFilteredRequests})
             </h2>
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowDebug(!showDebug)}
-              >
-                {showDebug ? "Hide" : "Show"} Debug
-              </Button>
+              
             </div>
           </div>
           
-          {isLoading ? (
-            <Card>
+          {isLoading ? <Card>
               <CardContent className="p-8 text-center">
                 <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
                 <p className="text-muted-foreground">Loading approval requests...</p>
               </CardContent>
-            </Card>
-          ) : error ? (
-            <Card>
+            </Card> : error ? <Card>
               <CardContent className="p-8 text-center">
                 <div className="text-destructive mb-4">
                   <p className="font-medium">Failed to load requests</p>
                   <p className="text-sm mt-2">{error}</p>
                 </div>
-                <Button 
-                  onClick={() => window.location.reload()} 
-                  variant="outline"
-                >
+                <Button onClick={() => window.location.reload()} variant="outline">
                   Try Again
                 </Button>
               </CardContent>
-            </Card>
-          ) : paginatedRequests.length === 0 ? (
-            <Card>
+            </Card> : paginatedRequests.length === 0 ? <Card>
               <CardContent className="p-8 text-center">
                 <p className="text-muted-foreground">
-                  {requests.length === 0 
-                    ? "No approval requests available." 
-                    : "No requests found matching your criteria."
-                  }
+                  {requests.length === 0 ? "No approval requests available." : "No requests found matching your criteria."}
                 </p>
               </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4">
-              {paginatedRequests.map((request) => (
-                request?.requestId ? (
-              <RequestCard
-                key={request.requestId}
-                request={request}
-                isSelected={selectedRequests.includes(request.requestId)}
-                isDisabled={isActionDisabled(request.requestId.toString()) || (request.abmStatus !== null && request.abmStatus !== undefined)}
-                onSelectionChange={handleCheckboxChange}
-                onAction={handleAction}
-                actionTaken={getActionTaken(request.requestId.toString())}
-                bulkModeActive={selectedRequests.length > 0}
-              />
-                ) : null
-              )).filter(Boolean)}
-            </div>
-          )}
+            </Card> : <div className="grid gap-4">
+              {paginatedRequests.map(request => request?.requestId ? <RequestCard key={request.requestId} request={request} isSelected={selectedRequests.includes(request.requestId)} isDisabled={isActionDisabled(request.requestId.toString()) || request.abmStatus !== null && request.abmStatus !== undefined} onSelectionChange={handleCheckboxChange} onAction={handleAction} actionTaken={getActionTaken(request.requestId.toString())} bulkModeActive={selectedRequests.length > 0} /> : null).filter(Boolean)}
+            </div>}
 
           {/* Pagination */}
-          {!isLoading && !error && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-            />
-          )}
+          {!isLoading && !error && <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />}
         </div>
 
         {/* Modals */}
-        {selectedRequest && (
-          <>
-            <ModifyRequestModal
-              isOpen={modifyModalOpen}
-              onClose={() => setModifyModalOpen(false)}
-              onConfirm={handleModifyConfirm}
-              requestId={selectedRequest.requestId.toString()}
-              currentData={{
-                orderValue: selectedRequest.orderQty,
-                discountType: selectedRequest.discountType,
-                discountValue: selectedRequest.discountValue || 0,
-              }}
-            />
-            <EscalateRequestModal
-              isOpen={escalateModalOpen}
-              onClose={() => setEscalateModalOpen(false)}
-              onConfirm={handleEscalateConfirm}
-              requestId={selectedRequest.requestId.toString()}
-            />
-          </>
-        )}
+        {selectedRequest && <>
+            <ModifyRequestModal isOpen={modifyModalOpen} onClose={() => setModifyModalOpen(false)} onConfirm={handleModifyConfirm} requestId={selectedRequest.requestId.toString()} currentData={{
+          orderValue: selectedRequest.orderQty,
+          discountType: selectedRequest.discountType,
+          discountValue: selectedRequest.discountValue || 0
+        }} />
+            <EscalateRequestModal isOpen={escalateModalOpen} onClose={() => setEscalateModalOpen(false)} onConfirm={handleEscalateConfirm} requestId={selectedRequest.requestId.toString()} />
+          </>}
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Dashboard;
