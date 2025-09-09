@@ -277,7 +277,16 @@ export const RequestCard = ({
           </div>
           <div>
             <h4 className="font-medium text-sm text-muted-foreground mb-1">Requested Date</h4>
-            <div className="text-sm">{new Date(request.createdAt).toISOString().slice(0, 19).replace('T', ' ')}</div>
+            <div className="text-sm">{new Date(request.createdAt).toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: '2-digit', 
+              year: 'numeric'
+            })} {new Date(request.createdAt).toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: true
+            })}</div>
           </div>
         </div>
 

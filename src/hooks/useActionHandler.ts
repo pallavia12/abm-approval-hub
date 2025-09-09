@@ -39,25 +39,17 @@ export const useActionHandler = () => {
   };
 
   const calculateTAT = (createdAt: string, actionTimestamp: string): string => {
-    console.log('TAT Calculation Debug:', { createdAt, actionTimestamp });
-    
-    // Parse dates properly handling timezone differences
+    // Convert both timestamps to UTC for consistent comparison
     const createdDate = new Date(createdAt);
-    const actionDate = new Date(actionTimestamp);
-    
-    console.log('Parsed dates:', { 
-      createdDate: createdDate.toISOString(), 
-      actionDate: actionDate.toISOString(),
-      createdTime: createdDate.getTime(),
-      actionTime: actionDate.getTime()
-    });
+    // The actionTimestamp from webhook is in format "2025:09:09 13:50:17"
+    // We need to normalize the format for proper parsing
+    const normalizedActionTimestamp = actionTimestamp.replace(/:/g, '-').replace(' ', 'T') + '.000Z';
+    const actionDate = new Date(normalizedActionTimestamp);
     
     const diffMs = Math.abs(actionDate.getTime() - createdDate.getTime());
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    
-    console.log('TAT calculation result:', { diffMs, diffDays, diffHours, diffMins });
     
     // Format TAT display intelligently
     if (diffDays > 0) {
