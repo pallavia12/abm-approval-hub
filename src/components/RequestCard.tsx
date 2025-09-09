@@ -277,16 +277,20 @@ export const RequestCard = ({
           </div>
           <div>
             <h4 className="font-medium text-sm text-muted-foreground mb-1">Requested Date</h4>
-            <div className="text-sm">{new Date(request.createdAt).toLocaleDateString('en-GB', {
-              day: '2-digit',
-              month: '2-digit', 
-              year: 'numeric'
-            })} {new Date(request.createdAt).toLocaleTimeString('en-US', {
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-              hour12: true
-            })}</div>
+            <div className="text-sm">{(() => {
+              const date = new Date(request.createdAt);
+              const day = date.getUTCDate().toString().padStart(2, '0');
+              const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+              const year = date.getUTCFullYear();
+              let hours = date.getUTCHours();
+              const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+              const seconds = date.getUTCSeconds().toString().padStart(2, '0');
+              const ampm = hours >= 12 ? 'PM' : 'AM';
+              hours = hours % 12;
+              hours = hours ? hours : 12;
+              const formattedHours = hours.toString().padStart(2, '0');
+              return `${day}/${month}/${year} ${formattedHours}:${minutes}:${seconds} ${ampm}`;
+            })()}</div>
           </div>
         </div>
 
