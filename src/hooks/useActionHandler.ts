@@ -13,7 +13,7 @@ export interface ActionResult {
 
 export const useActionHandler = () => {
   const [actionResults, setActionResults] = useState<Record<string, ActionResult>>({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingRequests, setLoadingRequests] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const sendToDiscountUpdateWebhook = async (data: any) => {
@@ -63,7 +63,7 @@ export const useActionHandler = () => {
   };
 
   const executeAction = async (requestId: string, action: 'ACCEPTED' | 'REJECTED' | 'MODIFIED' | 'ESCALATED', additionalData?: any) => {
-    setIsLoading(true);
+    setLoadingRequests(prev => new Set(prev).add(requestId));
     const now = new Date();
     const timestamp = now.toISOString();
     const formattedTimestamp = format(now, 'yyyy:MM:dd HH:mm:ss');
@@ -122,12 +122,16 @@ export const useActionHandler = () => {
       });
     }
 
-    setIsLoading(false);
+    setLoadingRequests(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(requestId);
+      return newSet;
+    });
     return result;
   };
 
   const executeBulkAction = async (requestIds: string[], action: 'ACCEPTED' | 'REJECTED', additionalData?: any) => {
-    setIsLoading(true);
+    requestIds.forEach(id => setLoadingRequests(prev => new Set(prev).add(id)));
     const now = new Date();
     const timestamp = now.toISOString();
     const formattedTimestamp = format(now, 'yyyy:MM:dd HH:mm:ss');
@@ -187,12 +191,20 @@ export const useActionHandler = () => {
       });
     }
 
-    setIsLoading(false);
+    requestIds.forEach(id => setLoadingRequests(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(id);
+      return newSet;
+    }));
     return result;
   };
 
   const isActionDisabled = (requestId: string): boolean => {
-    return actionResults[requestId]?.disabled || false;
+    return actionResults[requestId]?.disabled || loadingRequests.has(requestId) || false;
+  };
+
+  const isRequestLoading = (requestId: string): boolean => {
+    return loadingRequests.has(requestId);
   };
 
   const getActionTaken = (requestId: string): ActionResult | null => {
@@ -205,6 +217,7 @@ export const useActionHandler = () => {
     isActionDisabled,
     getActionTaken,
     actionResults,
-    isLoading
+    isRequestLoading,
+    isBulkLoading: loadingRequests.size > 0
   };
 };

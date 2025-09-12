@@ -75,7 +75,8 @@ const Dashboard = () => {
     executeBulkAction,
     isActionDisabled,
     getActionTaken,
-    isLoading: isActionLoading
+    isRequestLoading,
+    isBulkLoading
   } = useActionHandler();
   useEffect(() => {
     const asgardUsername = localStorage.getItem("asgard_username");
@@ -490,7 +491,7 @@ const Dashboard = () => {
         )}
 
         {/* Bulk Action Bar */}
-        <BulkActionBar selectedRequests={selectedRequests.map(id => id.toString())} totalRequests={paginatedRequests.filter(r => r?.requestId && !isActionDisabled(r.requestId.toString()) && (r.abmStatus === null || r.abmStatus === undefined)).length} onSelectAll={handleSelectAll} onDeselectAll={handleDeselectAll} onBulkAccept={handleBulkAccept} onBulkReject={handleBulkReject} isLoading={isActionLoading} />
+        <BulkActionBar selectedRequests={selectedRequests.map(id => id.toString())} totalRequests={paginatedRequests.filter(r => r?.requestId && !isActionDisabled(r.requestId.toString()) && (r.abmStatus === null || r.abmStatus === undefined)).length} onSelectAll={handleSelectAll} onDeselectAll={handleDeselectAll} onBulkAccept={handleBulkAccept} onBulkReject={handleBulkReject} isLoading={isBulkLoading} />
 
         {/* Request Cards */}
         <div className="space-y-4">
@@ -525,7 +526,7 @@ const Dashboard = () => {
                 </p>
               </CardContent>
             </Card> : <div className="grid gap-4">
-              {paginatedRequests.map(request => request?.requestId ? <RequestCard key={request.requestId} request={request} isSelected={selectedRequests.includes(request.requestId)} isDisabled={isActionDisabled(request.requestId.toString()) || request.abmStatus !== null && request.abmStatus !== undefined} onSelectionChange={handleCheckboxChange} onAction={handleAction} actionTaken={getActionTaken(request.requestId.toString())} bulkModeActive={selectedRequests.length > 0} /> : null).filter(Boolean)}
+              {paginatedRequests.map(request => request?.requestId ? <RequestCard key={request.requestId} request={request} isSelected={selectedRequests.includes(request.requestId)} isDisabled={isActionDisabled(request.requestId.toString()) || request.abmStatus !== null && request.abmStatus !== undefined} onSelectionChange={handleCheckboxChange} onAction={handleAction} actionTaken={getActionTaken(request.requestId.toString())} bulkModeActive={selectedRequests.length > 0} isLoading={isRequestLoading(request.requestId.toString())} /> : null).filter(Boolean)}
             </div>}
 
           {/* Pagination */}
