@@ -384,7 +384,14 @@ const Dashboard = () => {
 
   // Filter requests based on search and SE User filter
   const filteredRequests = useMemo(() => {
-    return requests.filter(request => {    
+    console.log('[Dashboard] Filtering with:', { 
+      totalRequests: requests.length, 
+      searchQuery, 
+      selectedSeUser,
+      reporteesCount: reportees.length 
+    });
+    
+    const filtered = requests.filter(request => {    
       const matchesSearch = (request.customerId?.toString() || '').includes(searchQuery.toLowerCase()) || 
                            (request.customerName || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
                            (request.requestedByUserName || '').toLowerCase().includes(searchQuery.toLowerCase());
@@ -403,6 +410,7 @@ const Dashboard = () => {
       );
       
       if (!selectedReportee) {
+        console.log('[Dashboard] No reportee found for SE User:', selectedSeUser);
         return false;
       }
       
@@ -412,6 +420,14 @@ const Dashboard = () => {
       
       return isManaged;
     });
+    
+    console.log('[Dashboard] Filtered results:', { 
+      originalCount: requests.length, 
+      filteredCount: filtered.length,
+      selectedSeUser 
+    });
+    
+    return filtered;
   }, [requests, searchQuery, selectedSeUser, reportees]);
 
   // Calculate pagination
@@ -461,7 +477,15 @@ const Dashboard = () => {
           </Card>}
 
         {/* Search and Filters */}
-        <SearchAndFilters searchQuery={searchQuery} onSearchChange={setSearchQuery} seUsers={reportees} selectedSeUser={selectedSeUser} onSeUserChange={setSelectedSeUser} />
+        {reportees.length > 0 && (
+          <SearchAndFilters 
+            searchQuery={searchQuery} 
+            onSearchChange={setSearchQuery} 
+            seUsers={reportees} 
+            selectedSeUser={selectedSeUser} 
+            onSeUserChange={setSelectedSeUser} 
+          />
+        )}
 
         {/* Bulk Action Bar */}
         <BulkActionBar selectedRequests={selectedRequests.map(id => id.toString())} totalRequests={paginatedRequests.filter(r => r?.requestId && !isActionDisabled(r.requestId.toString()) && (r.abmStatus === null || r.abmStatus === undefined)).length} onSelectAll={handleSelectAll} onDeselectAll={handleDeselectAll} onBulkAccept={handleBulkAccept} onBulkReject={handleBulkReject} />

@@ -24,6 +24,11 @@ export const SearchAndFilters = ({
       arr.findIndex(u => u.SE_UserName === user.SE_UserName) === index
     );
 
+  console.log('[SearchAndFilters] Props received:', { 
+    seUsers: seUsers.length, 
+    validSeUsers: validSeUsers.length, 
+    selectedSeUser 
+  });
   console.log('[SearchAndFilters] Valid SE Users:', validSeUsers.map(u => u.SE_UserName));
 
   return (
