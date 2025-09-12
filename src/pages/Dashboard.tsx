@@ -391,16 +391,23 @@ const Dashboard = () => {
       reporteesCount: reportees.length 
     });
     
+    // Debug: Log sample request and reportee data
+    console.log('[Dashboard] Sample request:', requests[0]);
+    console.log('[Dashboard] All reportees:', reportees);
+    
     const filtered = requests.filter(request => {    
-      const matchesSearch = (request.customerId?.toString() || '').includes(searchQuery.toLowerCase()) || 
+      const matchesSearch = searchQuery === '' || 
+                           (request.customerId?.toString() || '').includes(searchQuery.toLowerCase()) || 
                            (request.customerName || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
                            (request.requestedByUserName || '').toLowerCase().includes(searchQuery.toLowerCase());
       
       if (!matchesSearch) {
+        console.log('[Dashboard] Request failed search filter:', { requestId: request.requestId, searchQuery });
         return false;
       }
       
       if (selectedSeUser === "all" || !selectedSeUser) {
+        console.log('[Dashboard] Showing all requests (no SE filter)');
         return true;
       }
       
@@ -410,13 +417,24 @@ const Dashboard = () => {
       );
       
       if (!selectedReportee) {
-        console.log('[Dashboard] No reportee found for SE User:', selectedSeUser);
+        console.log('[Dashboard] No reportee found for SE User:', selectedSeUser, 'Available:', reportees.map(r => r.SE_UserName));
         return false;
       }
+      
+      console.log('[Dashboard] Selected reportee:', selectedReportee);
+      console.log('[Dashboard] Request ABM_UserName:', request.ABM_UserName);
+      console.log('[Dashboard] Reportee ABM_UserName:', selectedReportee.ABM_UserName);
       
       // Check if the selected SE user manages the ABM of this request
       const isManaged = request.ABM_UserName && selectedReportee.ABM_UserName && 
                        request.ABM_UserName.toLowerCase() === selectedReportee.ABM_UserName.toLowerCase();
+      
+      console.log('[Dashboard] Request matches SE filter:', { 
+        requestId: request.requestId, 
+        isManaged, 
+        requestABM: request.ABM_UserName,
+        reporteeABM: selectedReportee.ABM_UserName
+      });
       
       return isManaged;
     });
