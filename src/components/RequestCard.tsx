@@ -10,6 +10,7 @@ interface ApprovalRequest {
   customerId: number;
   customerName: string;
   customerContact: number;
+  CustomerTypeName?: string;
   campaignType: string;
   skuId?: number;
   skuName?: string;
@@ -216,7 +217,10 @@ export const RequestCard = ({
         <div>
           <h4 className="font-medium text-sm text-muted-foreground mb-1">Customer</h4>
           <div className="font-medium">{request.customerName} ({request.customerId})</div>
-          <div className="text-sm text-muted-foreground">{request.customerContact}</div>
+          <div className="text-sm text-muted-foreground">
+            {request.customerContact}
+            {request.CustomerTypeName && ` • ${request.CustomerTypeName}`}
+          </div>
         </div>
 
         {/* Campaign & Order Info */}
