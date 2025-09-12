@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -383,44 +383,50 @@ const Dashboard = () => {
   };
 
   // Filter requests based on search and SE User filter
-  const filteredRequests = requests.filter(request => {    
-    const matchesSearch = (request.customerId?.toString() || '').includes(searchQuery.toLowerCase()) || 
-                         (request.customerName || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         (request.requestedByUserName || '').toLowerCase().includes(searchQuery.toLowerCase());
-    
-    if (!matchesSearch) {
-      return false;
-    }
-    
-    if (selectedSeUser === "all" || !selectedSeUser) {
-      return true;
-    }
-    
-    // Filter by SE users who can approve - check if the selected SE user manages the ABM
-    const selectedReportee = reportees.find(r => 
-      r.SE_UserName && r.SE_UserName.toLowerCase() === selectedSeUser.toLowerCase()
-    );
-    
-    if (!selectedReportee) {
-      return false;
-    }
-    
-    // Check if the selected SE user manages the ABM of this request
-    const isManaged = request.ABM_UserName && selectedReportee.ABM_UserName && 
-                     request.ABM_UserName.toLowerCase() === selectedReportee.ABM_UserName.toLowerCase();
-    
-    return isManaged;
-  });
+  const filteredRequests = useMemo(() => {
+    return requests.filter(request => {    
+      const matchesSearch = (request.customerId?.toString() || '').includes(searchQuery.toLowerCase()) || 
+                           (request.customerName || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           (request.requestedByUserName || '').toLowerCase().includes(searchQuery.toLowerCase());
+      
+      if (!matchesSearch) {
+        return false;
+      }
+      
+      if (selectedSeUser === "all" || !selectedSeUser) {
+        return true;
+      }
+      
+      // Filter by SE users who can approve - check if the selected SE user manages the ABM
+      const selectedReportee = reportees.find(r => 
+        r.SE_UserName && r.SE_UserName.toLowerCase() === selectedSeUser.toLowerCase()
+      );
+      
+      if (!selectedReportee) {
+        return false;
+      }
+      
+      // Check if the selected SE user manages the ABM of this request
+      const isManaged = request.ABM_UserName && selectedReportee.ABM_UserName && 
+                       request.ABM_UserName.toLowerCase() === selectedReportee.ABM_UserName.toLowerCase();
+      
+      return isManaged;
+    });
+  }, [requests, searchQuery, selectedSeUser, reportees]);
 
   // Calculate pagination
   const totalFilteredRequests = filteredRequests.length;
   const calculatedTotalPages = Math.ceil(totalFilteredRequests / requestsPerPage);
-
-  // Update total pages when filtered requests change and reset to page 1 when filter changes
+  
+  // Update total pages when filtered requests change
   useEffect(() => {
     setTotalPages(calculatedTotalPages);
-    setCurrentPage(1); // Reset to first page when filter changes
-  }, [calculatedTotalPages, selectedSeUser, searchQuery]);
+  }, [calculatedTotalPages]);
+
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedSeUser, searchQuery]);
 
   // Get current page requests
   const startIndex = (currentPage - 1) * requestsPerPage;
