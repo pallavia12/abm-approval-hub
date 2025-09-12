@@ -58,7 +58,7 @@ const Dashboard = () => {
   const [selectedRequest, setSelectedRequest] = useState<ApprovalRequest | null>(null);
   const [selectedRequests, setSelectedRequests] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [selectedBdm, setSelectedBdm] = useState<string>("all");
+  const [selectedSeUser, setSelectedSeUser] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -382,18 +382,47 @@ const Dashboard = () => {
     }
   };
 
-  // Filter requests based on search and BDM filter
+  // Filter requests based on search and SE User filter
   const filteredRequests = requests.filter(request => {
-    const matchesSearch = (request.customerId?.toString() || '').includes(searchQuery.toLowerCase()) || (request.customerName || '').toLowerCase().includes(searchQuery.toLowerCase()) || (request.requestedByUserName || '').toLowerCase().includes(searchQuery.toLowerCase());
-    if (!matchesSearch) return false;
-    if (selectedBdm === "all" || !selectedBdm) return true;
+    console.log('Filtering request:', request.requestId, 'ABM_UserName:', request.ABM_UserName);
+    
+    const matchesSearch = (request.customerId?.toString() || '').includes(searchQuery.toLowerCase()) || 
+                         (request.customerName || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         (request.requestedByUserName || '').toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (!matchesSearch) {
+      console.log('Request', request.requestId, 'does not match search query');
+      return false;
+    }
+    
+    if (selectedSeUser === "all" || !selectedSeUser) {
+      console.log('No SE User filter applied, showing request', request.requestId);
+      return true;
+    }
 
+    console.log('Filtering by SE User:', selectedSeUser);
+    console.log('Available reportees:', reportees.map(r => ({ SE_UserName: r.SE_UserName, ABM_UserName: r.ABM_UserName })));
+    
     // Filter by SE users who can approve - check if the selected SE user manages the ABM
-    const selectedReportee = reportees.find(r => r.SE_UserName === selectedBdm);
-    if (!selectedReportee) return false;
+    const selectedReportee = reportees.find(r => 
+      r.SE_UserName && r.SE_UserName.toLowerCase() === selectedSeUser.toLowerCase()
+    );
+    
+    if (!selectedReportee) {
+      console.log('No reportee found for SE User:', selectedSeUser);
+      return false;
+    }
 
+    console.log('Selected reportee:', selectedReportee);
+    
     // Check if the selected SE user manages the ABM of this request
-    return request.ABM_UserName === selectedReportee.ABM_UserName;
+    const isManaged = request.ABM_UserName && selectedReportee.ABM_UserName && 
+                     request.ABM_UserName.toLowerCase() === selectedReportee.ABM_UserName.toLowerCase();
+    
+    console.log('Request', request.requestId, 'ABM matches?', isManaged, 
+               'Request ABM:', request.ABM_UserName, 'Reportee ABM:', selectedReportee.ABM_UserName);
+    
+    return isManaged;
   });
 
   // Calculate pagination
@@ -441,7 +470,7 @@ const Dashboard = () => {
           </Card>}
 
         {/* Search and Filters */}
-        <SearchAndFilters searchQuery={searchQuery} onSearchChange={setSearchQuery} seUsers={reportees} selectedSeUser={selectedBdm} onSeUserChange={setSelectedBdm} />
+        <SearchAndFilters searchQuery={searchQuery} onSearchChange={setSearchQuery} seUsers={reportees} selectedSeUser={selectedSeUser} onSeUserChange={setSelectedSeUser} />
 
         {/* Bulk Action Bar */}
         <BulkActionBar selectedRequests={selectedRequests.map(id => id.toString())} totalRequests={paginatedRequests.filter(r => r?.requestId && !isActionDisabled(r.requestId.toString()) && (r.abmStatus === null || r.abmStatus === undefined)).length} onSelectAll={handleSelectAll} onDeselectAll={handleDeselectAll} onBulkAccept={handleBulkAccept} onBulkReject={handleBulkReject} />
