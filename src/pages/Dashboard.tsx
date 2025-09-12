@@ -383,25 +383,18 @@ const Dashboard = () => {
   };
 
   // Filter requests based on search and SE User filter
-  const filteredRequests = requests.filter(request => {
-    console.log('Filtering request:', request.requestId, 'ABM_UserName:', request.ABM_UserName);
-    
+  const filteredRequests = requests.filter(request => {    
     const matchesSearch = (request.customerId?.toString() || '').includes(searchQuery.toLowerCase()) || 
                          (request.customerName || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
                          (request.requestedByUserName || '').toLowerCase().includes(searchQuery.toLowerCase());
     
     if (!matchesSearch) {
-      console.log('Request', request.requestId, 'does not match search query');
       return false;
     }
     
     if (selectedSeUser === "all" || !selectedSeUser) {
-      console.log('No SE User filter applied, showing request', request.requestId);
       return true;
     }
-
-    console.log('Filtering by SE User:', selectedSeUser);
-    console.log('Available reportees:', reportees.map(r => ({ SE_UserName: r.SE_UserName, ABM_UserName: r.ABM_UserName })));
     
     // Filter by SE users who can approve - check if the selected SE user manages the ABM
     const selectedReportee = reportees.find(r => 
@@ -409,18 +402,12 @@ const Dashboard = () => {
     );
     
     if (!selectedReportee) {
-      console.log('No reportee found for SE User:', selectedSeUser);
       return false;
     }
-
-    console.log('Selected reportee:', selectedReportee);
     
     // Check if the selected SE user manages the ABM of this request
     const isManaged = request.ABM_UserName && selectedReportee.ABM_UserName && 
                      request.ABM_UserName.toLowerCase() === selectedReportee.ABM_UserName.toLowerCase();
-    
-    console.log('Request', request.requestId, 'ABM matches?', isManaged, 
-               'Request ABM:', request.ABM_UserName, 'Reportee ABM:', selectedReportee.ABM_UserName);
     
     return isManaged;
   });
@@ -429,13 +416,11 @@ const Dashboard = () => {
   const totalFilteredRequests = filteredRequests.length;
   const calculatedTotalPages = Math.ceil(totalFilteredRequests / requestsPerPage);
 
-  // Update total pages when filtered requests change
-  if (calculatedTotalPages !== totalPages) {
+  // Update total pages when filtered requests change and reset to page 1 when filter changes
+  useEffect(() => {
     setTotalPages(calculatedTotalPages);
-    if (currentPage > calculatedTotalPages && calculatedTotalPages > 0) {
-      setCurrentPage(1);
-    }
-  }
+    setCurrentPage(1); // Reset to first page when filter changes
+  }, [calculatedTotalPages, selectedSeUser, searchQuery]);
 
   // Get current page requests
   const startIndex = (currentPage - 1) * requestsPerPage;
