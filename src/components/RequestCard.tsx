@@ -40,6 +40,7 @@ interface RequestCardProps {
   onAction: (requestId: number, action: string) => void;
   actionTaken?: { action: string; timestamp: string; tatTime?: string } | null;
   bulkModeActive: boolean;
+  isLoading?: boolean;
 }
 
 export const RequestCard = ({
@@ -50,6 +51,7 @@ export const RequestCard = ({
   onAction,
   actionTaken,
   bulkModeActive,
+  isLoading = false,
 }: RequestCardProps) => {
   // Calculate TAT if abmStatus exists and abmReviewedAt is available
   const calculateAbmTAT = () => {
@@ -69,7 +71,7 @@ export const RequestCard = ({
 
   const renderActionButtons = () => {
     // If abmStatus exists (not null), disable all actions
-    const disabled = isDisabled || bulkModeActive || (request.abmStatus !== null && request.abmStatus !== undefined);
+    const disabled = isDisabled || bulkModeActive || isLoading || (request.abmStatus !== null && request.abmStatus !== undefined);
 
     // Show abmStatus information if it exists (not null or undefined)
     if (request.abmStatus && request.abmStatus !== null) {
@@ -190,7 +192,7 @@ export const RequestCard = ({
               onCheckedChange={(checked) => 
                 onSelectionChange(request.requestId, checked as boolean)
               }
-              disabled={isDisabled || (request.abmStatus !== null && request.abmStatus !== undefined)}
+              disabled={isDisabled || isLoading || (request.abmStatus !== null && request.abmStatus !== undefined)}
             />
             <CardTitle className="text-lg">{request.requestId}</CardTitle>
           </div>

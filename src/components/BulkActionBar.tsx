@@ -9,6 +9,7 @@ interface BulkActionBarProps {
   onDeselectAll: () => void;
   onBulkAccept: () => void;
   onBulkReject: () => void;
+  isLoading?: boolean;
 }
 
 export const BulkActionBar = ({
@@ -17,7 +18,8 @@ export const BulkActionBar = ({
   onSelectAll,
   onDeselectAll,
   onBulkAccept,
-  onBulkReject
+  onBulkReject,
+  isLoading = false
 }: BulkActionBarProps) => {
   const hasSelections = selectedRequests.length > 0;
   const allSelected = selectedRequests.length === totalRequests && totalRequests > 0;
@@ -32,6 +34,7 @@ export const BulkActionBar = ({
               size="sm"
               onClick={allSelected ? onDeselectAll : onSelectAll}
               className="flex items-center gap-2"
+              disabled={isLoading}
             >
               {allSelected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
               {allSelected ? 'Deselect All' : 'Select All'}
@@ -51,6 +54,7 @@ export const BulkActionBar = ({
                 size="sm"
                 onClick={onBulkAccept}
                 className="flex-1 sm:flex-none"
+                disabled={isLoading}
               >
                 Accept ({selectedRequests.length})
               </Button>
@@ -59,6 +63,7 @@ export const BulkActionBar = ({
                 size="sm"
                 onClick={onBulkReject}
                 className="flex-1 sm:flex-none"
+                disabled={isLoading}
               >
                 Reject ({selectedRequests.length})
               </Button>

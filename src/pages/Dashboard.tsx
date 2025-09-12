@@ -74,7 +74,8 @@ const Dashboard = () => {
     executeAction,
     executeBulkAction,
     isActionDisabled,
-    getActionTaken
+    getActionTaken,
+    isLoading: isActionLoading
   } = useActionHandler();
   useEffect(() => {
     const asgardUsername = localStorage.getItem("asgard_username");
@@ -489,7 +490,7 @@ const Dashboard = () => {
         )}
 
         {/* Bulk Action Bar */}
-        <BulkActionBar selectedRequests={selectedRequests.map(id => id.toString())} totalRequests={paginatedRequests.filter(r => r?.requestId && !isActionDisabled(r.requestId.toString()) && (r.abmStatus === null || r.abmStatus === undefined)).length} onSelectAll={handleSelectAll} onDeselectAll={handleDeselectAll} onBulkAccept={handleBulkAccept} onBulkReject={handleBulkReject} />
+        <BulkActionBar selectedRequests={selectedRequests.map(id => id.toString())} totalRequests={paginatedRequests.filter(r => r?.requestId && !isActionDisabled(r.requestId.toString()) && (r.abmStatus === null || r.abmStatus === undefined)).length} onSelectAll={handleSelectAll} onDeselectAll={handleDeselectAll} onBulkAccept={handleBulkAccept} onBulkReject={handleBulkReject} isLoading={isActionLoading} />
 
         {/* Request Cards */}
         <div className="space-y-4">
