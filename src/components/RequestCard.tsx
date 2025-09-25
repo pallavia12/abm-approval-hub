@@ -31,6 +31,12 @@ interface ApprovalRequest {
   abmDiscountValue?: number;
   abmDiscountType?: string;
   abmRemarks?: string;
+  // Overall status and admin review fields from API
+  status?: string | null;
+  adminStatus?: string | null;
+  adminRemarks?: string | null;
+  adminDiscountValue?: number | null;
+  adminDiscountType?: string | null;
 }
 
 interface RequestCardProps {
@@ -68,6 +74,15 @@ export const RequestCard = ({
       return `${days} days, ${hours} hours, ${minutes} minutes`;
     }
     return null;
+  };
+
+  const getStatusVariant = (status?: string | null) => {
+    const s = (status || '').toUpperCase();
+    if (s === 'ACCEPTED' || s === 'APPROVED') return 'default';
+    if (s === 'REJECTED') return 'destructive';
+    if (s === 'MODIFIED') return 'secondary';
+    if (s === 'ESCALATED' || s === 'PENDING') return 'outline';
+    return 'secondary';
   };
 
   const renderActionButtons = () => {
@@ -195,7 +210,14 @@ export const RequestCard = ({
               }
               disabled={isDisabled || isLoading || (request.abmStatus !== null && request.abmStatus !== undefined)}
             />
-            <CardTitle className="text-lg">{request.requestId}</CardTitle>
+            <CardTitle className="text-lg flex items-center gap-2">
+              {request.requestId}
+              {request.status && (
+                <Badge variant={getStatusVariant(request.status)} className="text-xs">
+                  {request.status}
+                </Badge>
+              )}
+            </CardTitle>
           </div>
           <div className="flex flex-col items-end gap-1">
             <Badge 
@@ -299,6 +321,36 @@ export const RequestCard = ({
             })()}</div>
           </div>
         </div>
+
+        {/* Admin Review */}
+        {request.adminStatus && (
+          <div className="pt-2 border-t">
+            <h4 className="font-medium text-sm text-muted-foreground mb-1">Admin Review</h4>
+            <div className="text-sm flex flex-col gap-1">
+              <div>
+                <span className="text-muted-foreground text-xs mr-2">adminStatus:</span>
+                <span className="font-medium">{request.adminStatus}</span>
+              </div>
+
+              {request.adminStatus === 'REJECTED' && request.adminRemarks && (
+                <div>
+                  <span className="text-muted-foreground text-xs mr-2">adminRemarks:</span>
+                  <span className="text-sm">{request.adminRemarks}</span>
+                </div>
+              )}
+
+              {request.adminStatus === 'MODIFIED' && (request.adminDiscountValue !== null && request.adminDiscountValue !== undefined) && (
+                <div>
+                  <span className="text-muted-foreground text-xs mr-2">adminDiscount:</span>
+                  <span className="text-sm font-medium">
+                    {request.adminDiscountValue}
+                    {request.adminDiscountType ? ` (${request.adminDiscountType})` : ''}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="pt-2 border-t">

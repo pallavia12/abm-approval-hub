@@ -35,6 +35,12 @@ interface ApprovalRequest {
   abmDiscountValue?: number;
   abmDiscountType?: string;
   abmRemarks?: string;
+  // Overall status and admin review fields from API
+  status?: string | null;
+  adminStatus?: string | null;
+  adminRemarks?: string | null;
+  adminDiscountValue?: number | null;
+  adminDiscountType?: string | null;
 }
 interface Reportee {
   SE_Id: number;
