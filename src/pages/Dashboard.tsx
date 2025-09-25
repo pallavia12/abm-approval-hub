@@ -293,6 +293,19 @@ const Dashboard = () => {
       }
       return;
     }
+    if (action === "Reject") {
+      const reason = window.prompt('Please enter the rejection reason');
+      if (!reason || reason.trim() === '') {
+        toast({ title: 'Reason required', description: 'Rejection reason cannot be empty', variant: 'destructive' });
+        return;
+      }
+      const request = requests.find(r => r.requestId === requestId);
+      await executeAction(requestId.toString(), 'REJECTED', {
+        createdAt: request?.createdAt,
+        remarks: reason.trim()
+      });
+      return;
+    }
     const request = requests.find(r => r.requestId === requestId);
     await executeAction(requestId.toString(), action as 'ACCEPTED' | 'REJECTED', {
       createdAt: request?.createdAt

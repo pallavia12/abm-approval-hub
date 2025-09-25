@@ -81,8 +81,15 @@ export const RequestCard = ({
     if (s === 'ACCEPTED' || s === 'APPROVED') return 'default';
     if (s === 'REJECTED') return 'destructive';
     if (s === 'MODIFIED') return 'secondary';
-    if (s === 'ESCALATED' || s === 'PENDING') return 'outline';
+    if (s === 'ESCALATED' || s === 'PENDING' || s === 'CREATED') return 'outline';
     return 'secondary';
+  };
+
+  const getStatusClassName = (status?: string | null) => {
+    const s = (status || '').toUpperCase();
+    if (s === 'CREATED') return 'bg-green-500 text-white';
+    if (s === 'PENDING') return 'bg-amber-500 text-black';
+    return '';
   };
 
   const renderActionButtons = () => {
@@ -213,7 +220,7 @@ export const RequestCard = ({
             <CardTitle className="text-lg flex items-center gap-2">
               {request.requestId}
               {request.status && (
-                <Badge variant={getStatusVariant(request.status)} className="text-xs">
+                <Badge variant={getStatusVariant(request.status)} className={`text-xs ${getStatusClassName(request.status)}`}>
                   {request.status}
                 </Badge>
               )}
@@ -279,8 +286,8 @@ export const RequestCard = ({
           <div className="text-sm">
             {/* Show abm values if modified and available, otherwise show original */}
             {request.abmStatus === 'MODIFIED' && request.abmDiscountValue && request.abmDiscountValue !== 0
-              ? request.abmDiscountValue
-              : (request.discountValue || 0)} 
+              ? `₹ ${request.abmDiscountValue}`
+              : `₹ ${request.discountValue || 0}`} 
             {' '}
             ({request.abmStatus === 'MODIFIED' && request.abmDiscountType && request.abmDiscountType.trim() !== ''
               ? request.abmDiscountType
@@ -343,7 +350,7 @@ export const RequestCard = ({
                 <div>
                   <span className="text-muted-foreground text-xs mr-2">adminDiscount:</span>
                   <span className="text-sm font-medium">
-                    {request.adminDiscountValue}
+                    ₹ {request.adminDiscountValue}
                     {request.adminDiscountType ? ` (${request.adminDiscountType})` : ''}
                   </span>
                 </div>

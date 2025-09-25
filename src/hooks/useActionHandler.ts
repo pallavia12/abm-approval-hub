@@ -87,7 +87,7 @@ export const useActionHandler = () => {
       abmOrderQty: action === 'MODIFIED' ? additionalData?.orderKg || null : null,
       abmDiscountType: action === 'MODIFIED' ? (additionalData?.discountType !== undefined ? additionalData.discountType : null) : null,
       abmDiscountValue: action === 'MODIFIED' ? additionalData?.discountValue || null : null,
-      abmRemarks: action === 'ESCALATED' ? additionalData?.remarks || null : null,
+      abmRemarks: action === 'ESCALATED' || action === 'REJECTED' ? additionalData?.remarks || null : null,
       abmReviewedBy: username,
       abmReviewedAt: formattedTimestamp
     };
