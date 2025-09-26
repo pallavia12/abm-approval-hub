@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { LogOut, Loader2 } from "lucide-react";
 import ModifyRequestModal, { ModifyData } from "@/components/ModifyRequestModal";
@@ -73,6 +75,10 @@ const Dashboard = () => {
   const [showDebug, setShowDebug] = useState(false);
   const requestsPerPage = 10;
   const navigate = useNavigate();
+  // Reject modal state
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectRequestId, setRejectRequestId] = useState<number | null>(null);
   const {
     toast
   } = useToast();
@@ -294,22 +300,31 @@ const Dashboard = () => {
       return;
     }
     if (action === "Reject") {
-      const reason = window.prompt('Please enter the rejection reason');
-      if (!reason || reason.trim() === '') {
-        toast({ title: 'Reason required', description: 'Rejection reason cannot be empty', variant: 'destructive' });
-        return;
-      }
-      const request = requests.find(r => r.requestId === requestId);
-      await executeAction(requestId.toString(), 'REJECTED', {
-        createdAt: request?.createdAt,
-        remarks: reason.trim()
-      });
+      setRejectRequestId(requestId);
+      setRejectReason("");
+      setRejectModalOpen(true);
       return;
     }
     const request = requests.find(r => r.requestId === requestId);
     await executeAction(requestId.toString(), action as 'ACCEPTED' | 'REJECTED', {
       createdAt: request?.createdAt
     });
+  };
+  const handleConfirmReject = async () => {
+    if (!rejectRequestId) return;
+    const reason = rejectReason.trim();
+    if (reason === "") {
+      toast({ title: "Reason required", description: "Rejection reason cannot be empty", variant: "destructive" });
+      return;
+    }
+    const request = requests.find(r => r.requestId === rejectRequestId);
+    await executeAction(rejectRequestId.toString(), 'REJECTED', {
+      createdAt: request?.createdAt,
+      remarks: reason
+    });
+    setRejectModalOpen(false);
+    setRejectRequestId(null);
+    setRejectReason("");
   };
   const handleModifyConfirm = async (modifyData: ModifyData) => {
     if (!selectedRequest) return;
@@ -561,6 +576,25 @@ const Dashboard = () => {
         }} />
             <EscalateRequestModal isOpen={escalateModalOpen} onClose={() => setEscalateModalOpen(false)} onConfirm={handleEscalateConfirm} requestId={selectedRequest.requestId.toString()} />
           </>}
+
+        {/* Reject Reason Modal */}
+        <Dialog open={rejectModalOpen} onOpenChange={setRejectModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Enter rejection reason</DialogTitle>
+            </DialogHeader>
+            <Textarea
+              placeholder="Type the reason for rejection"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              rows={5}
+            />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRejectModalOpen(false)}>Cancel</Button>
+              <Button onClick={handleConfirmReject}>Confirm Reject</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>;
 };
