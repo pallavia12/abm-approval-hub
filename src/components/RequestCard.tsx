@@ -129,7 +129,6 @@ export const RequestCard = ({
       const getActionPastTense = (action: string) => {
         switch (action) {
           case 'Accept': return 'Accepted';
-          case 'Approve': return 'Approved';
           case 'Reject': return 'Rejected';
           case 'Modify': return 'Modified';
           case 'Escalate': return 'Escalated';
@@ -154,17 +153,8 @@ export const RequestCard = ({
       );
     }
 
-    // Show same buttons for both eligible and not eligible cases
-    return (
-      <div className="flex gap-2">
-        <Button 
-          variant="default" 
-          size="sm"
-          disabled={disabled}
-          onClick={() => onAction(request.requestId, "Accept")}
-        >
-          Approve
-        </Button>
+    const commonButtons = (
+      <>
         <Button 
           variant="destructive" 
           size="sm"
@@ -181,8 +171,38 @@ export const RequestCard = ({
         >
           Modify
         </Button>
-      </div>
+      </>
     );
+
+    if (request.eligible === 1) {
+      return (
+        <div className="flex gap-2">
+          <Button 
+            variant="default" 
+            size="sm"
+            disabled={disabled}
+            onClick={() => onAction(request.requestId, "Accept")}
+          >
+            Accept
+          </Button>
+          {commonButtons}
+        </div>
+      );
+    } else {
+      return (
+        <div className="flex gap-2">
+          <Button 
+            variant="secondary" 
+            size="sm"
+            disabled={disabled}
+            onClick={() => onAction(request.requestId, "Escalate")}
+          >
+            Escalate
+          </Button>
+          {commonButtons}
+        </div>
+      );
+    }
   };
 
   return (
