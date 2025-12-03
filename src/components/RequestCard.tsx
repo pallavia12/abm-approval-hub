@@ -175,6 +175,7 @@ export const RequestCard = ({
     );
 
     if (request.eligible === 1) {
+      // Eligible cases: Show Accept, Reject, Modify
       return (
         <div className="flex gap-2">
           <Button 
@@ -189,19 +190,53 @@ export const RequestCard = ({
         </div>
       );
     } else {
-      return (
-        <div className="flex gap-2">
-          <Button 
-            variant="secondary" 
-            size="sm"
-            disabled={disabled}
-            onClick={() => onAction(request.requestId, "Escalate")}
-          >
-            Escalate
-          </Button>
-          {commonButtons}
-        </div>
-      );
+      // Not eligible cases: Check eligibilityReason
+      const eligibilityReasonLower = (request.eligibilityReason || '').toLowerCase();
+      const isSkuPromotionAdminApproval = eligibilityReasonLower === 'sku promotion needs admin approval';
+      
+      if (isSkuPromotionAdminApproval) {
+        // Show Escalate, Reject, Modify
+        return (
+          <div className="flex gap-2">
+            <Button 
+              variant="secondary" 
+              size="sm"
+              disabled={disabled}
+              onClick={() => onAction(request.requestId, "Escalate")}
+            >
+              Escalate
+            </Button>
+            {commonButtons}
+          </div>
+        );
+      } else {
+        // Disable all action buttons for other eligibility reasons
+        return (
+          <div className="flex gap-2">
+            <Button 
+              variant="default" 
+              size="sm"
+              disabled={true}
+            >
+              Accept
+            </Button>
+            <Button 
+              variant="destructive" 
+              size="sm"
+              disabled={true}
+            >
+              Reject
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              disabled={true}
+            >
+              Modify
+            </Button>
+          </div>
+        );
+      }
     }
   };
 
