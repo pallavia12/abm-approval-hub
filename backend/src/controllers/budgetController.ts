@@ -40,7 +40,10 @@ export const fetchBudget = async (req: Request, res: Response) => {
     const { monday, sunday } = getCurrentWeek();
     const yearWeek = getYearWeek(monday);
 
+    console.log('[Budget Controller] Fetching budget for:', { username, yearWeek, monday: monday.toISOString(), sunday: sunday.toISOString() });
+
     // Query the DiscountRequestAbmBudget table
+    // Try multiple yearWeek formats in case the format doesn't match
     const query = `
       SELECT 
         allocatedBudget,
@@ -53,7 +56,9 @@ export const fetchBudget = async (req: Request, res: Response) => {
       LIMIT 1
     `;
     
+    console.log('[Budget Controller] Executing query with params:', [username, yearWeek]);
     const [rows] = await pool.execute(query, [username, yearWeek]) as any;
+    console.log('[Budget Controller] Query result:', rows);
     
     if (rows.length === 0) {
       // Return default values if no budget record found

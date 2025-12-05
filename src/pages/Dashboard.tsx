@@ -110,19 +110,46 @@ const Dashboard = () => {
     setIsLoadingBudget(true);
     try {
       const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/api/budget?username=${encodeURIComponent(asgardUsername)}`);
+      const budgetUrl = `${apiBaseUrl}/api/budget?username=${encodeURIComponent(asgardUsername)}`;
+      
+      console.log('[Dashboard] Fetching budget from:', budgetUrl);
+      
+      const response = await fetch(budgetUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      console.log('[Dashboard] Budget response status:', response.status);
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch budget: ${response.status}`);
+        const errorText = await response.text();
+        console.error('[Dashboard] Budget API error:', response.status, errorText);
+        throw new Error(`Failed to fetch budget: ${response.status} - ${errorText}`);
       }
       
       const result = await response.json();
+      console.log('[Dashboard] Budget API result:', result);
+      
       if (result.success && result.data) {
         setBudgetData(result.data);
+      } else {
+        console.warn('[Dashboard] Budget API returned unsuccessful result:', result);
+        // Set default values if API returns but with no data
+        if (result.data) {
+          setBudgetData(result.data);
+        }
       }
     } catch (error) {
-      console.error('Error fetching budget:', error);
-      // Don't show error toast for budget, just log it
+      console.error('[Dashboard] Error fetching budget:', error);
+      // If it's a 404 or network error, the backend might not be available
+      // This is okay if using n8n, so we'll just not show budget data
+      if (error instanceof Error) {
+        if (error.message.includes('404') || error.message.includes('Failed to fetch')) {
+          console.log('[Dashboard] Budget endpoint not available (likely using n8n), skipping budget display');
+        }
+      }
     } finally {
       setIsLoadingBudget(false);
     }
@@ -561,14 +588,15 @@ const Dashboard = () => {
           </Card>}
 
         {/* Budget Summary Card */}
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            {isLoadingBudget ? (
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                <span className="ml-2 text-sm text-muted-foreground">Loading budget...</span>
-              </div>
-            ) : budgetData ? (
+        {budgetData && (
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              {isLoadingBudget ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-sm text-muted-foreground">Loading budget...</span>
+                </div>
+              ) : (
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
                 {/* Wallet Icon */}
                 <div className="flex-shrink-0">
@@ -612,13 +640,10 @@ const Dashboard = () => {
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="flex items-center justify-center py-4">
-                <span className="text-sm text-muted-foreground">Unable to load budget data</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Search and Filters */}
         {reportees.length > 0 && (
