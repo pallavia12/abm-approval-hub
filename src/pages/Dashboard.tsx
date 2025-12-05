@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Loader2 } from "lucide-react";
+import { LogOut, Loader2, Wallet } from "lucide-react";
 import ModifyRequestModal, { ModifyData } from "@/components/ModifyRequestModal";
 import EscalateRequestModal from "@/components/EscalateRequestModal";
 import { BulkActionBar } from "@/components/BulkActionBar";
@@ -51,11 +51,24 @@ interface Reportee {
   ABM_UserName: string;
 }
 
+interface BudgetData {
+  allocatedBudget: number;
+  consumedBudget: number;
+  balance: number;
+  weekStart: string;
+  weekEnd: string;
+}
+
 // API Configuration
-const getApiUrl = () => {
-  // Use the actual webhook URL you specified
-  return import.meta.env.VITE_API_URL || "https://ninjasndanalytics.app.n8n.cloud/webhook/fetch-requests";
-  //"http://localhost:5678/webhook-test/fetch-requests";
+// Use VITE_API_BASE_URL to switch between n8n and local backend
+// Set VITE_API_BASE_URL=http://localhost:3001 to use local backend
+// Leave unset or set to n8n URL to use n8n webhooks
+const getApiBaseUrl = () => {
+  return import.meta.env.VITE_API_BASE_URL || "https://ninjasndanalytics.app.n8n.cloud";
+};
+
+const getApiUrl = (endpoint: string) => {
+  return `${getApiBaseUrl()}/webhook/${endpoint}`;
 };
 const Dashboard = () => {
   const [requests, setRequests] = useState<ApprovalRequest[]>([]);
@@ -73,6 +86,8 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [debugData, setDebugData] = useState<any>(null);
   const [showDebug, setShowDebug] = useState(false);
+  const [budgetData, setBudgetData] = useState<BudgetData | null>(null);
+  const [isLoadingBudget, setIsLoadingBudget] = useState(false);
   const requestsPerPage = 10;
   const navigate = useNavigate();
   // Reject modal state
@@ -90,6 +105,37 @@ const Dashboard = () => {
     isRequestLoading,
     isBulkLoading
   } = useActionHandler();
+  // Fetch budget data
+  const fetchBudgetData = async (asgardUsername: string) => {
+    setIsLoadingBudget(true);
+    try {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/api/budget?username=${encodeURIComponent(asgardUsername)}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch budget: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      if (result.success && result.data) {
+        setBudgetData(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching budget:', error);
+      // Don't show error toast for budget, just log it
+    } finally {
+      setIsLoadingBudget(false);
+    }
+  };
+
+  // Format date for display (e.g., "01 Dec")
+  const formatDateDisplay = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = date.toLocaleString('en-US', { month: 'short' });
+    return `${day} ${month}`;
+  };
+
   useEffect(() => {
     const asgardUsername = localStorage.getItem("asgard_username");
     if (!asgardUsername) {
@@ -97,6 +143,9 @@ const Dashboard = () => {
       return;
     }
     setUsername(asgardUsername);
+    
+    // Fetch budget data on page load
+    fetchBudgetData(asgardUsername);
 
     // Sequential API calls for requests and reportees with independent error handling
     const fetchData = async () => {
@@ -120,8 +169,7 @@ const Dashboard = () => {
       // Fetch requests first
       try {
         console.log('[Dashboard.tsx] Fetching approval requests...');
-        const requestsResponse = await fetch(`https://ninjasndanalytics.app.n8n.cloud/webhook/fetch-requests`, {
-          //`http://localhost:5678/webhook-test/fetch-requests`, {
+        const requestsResponse = await fetch(getApiUrl('fetch-requests'), {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -159,8 +207,7 @@ const Dashboard = () => {
       // Fetch reportees second, independently of requests result
       try {
         console.log('[Dashboard.tsx] Fetching reportees...');
-        const reporteesResponse = await fetch(`https://ninjasndanalytics.app.n8n.cloud/webhook/get-reportees`, {
-          //`http://localhost:5678/webhook-test/get-reportees`, {
+        const reporteesResponse = await fetch(getApiUrl('get-reportees'), {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -512,6 +559,66 @@ const Dashboard = () => {
               </div>
             </CardContent>
           </Card>}
+
+        {/* Budget Summary Card */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            {isLoadingBudget ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-sm text-muted-foreground">Loading budget...</span>
+              </div>
+            ) : budgetData ? (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+                {/* Wallet Icon */}
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Wallet className="h-6 w-6 text-primary" />
+                  </div>
+                </div>
+                
+                {/* Budget Details */}
+                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+                  {/* Week Period */}
+                  <div className="flex flex-col">
+                    <span className="text-sm text-muted-foreground mb-1">Period</span>
+                    <span className="text-base font-medium">
+                      {formatDateDisplay(budgetData.weekStart)} – {formatDateDisplay(budgetData.weekEnd)}
+                    </span>
+                  </div>
+                  
+                  {/* Allocated */}
+                  <div className="flex flex-col">
+                    <span className="text-sm text-muted-foreground mb-1">Allocated</span>
+                    <span className="text-base font-medium">₹{budgetData.allocatedBudget.toLocaleString('en-IN')}</span>
+                  </div>
+                  
+                  {/* Used */}
+                  <div className="flex flex-col">
+                    <span className="text-sm text-muted-foreground mb-1">Used</span>
+                    <span className="text-base font-medium">₹{budgetData.consumedBudget.toLocaleString('en-IN')}</span>
+                  </div>
+                  
+                  {/* Balance */}
+                  <div className="flex flex-col">
+                    <span className="text-sm text-muted-foreground mb-1">Balance</span>
+                    <span className={`text-base font-medium px-2 py-1 rounded inline-block ${
+                      budgetData.balance >= 0 
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' 
+                        : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                    }`}>
+                      ₹{budgetData.balance.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center py-4">
+                <span className="text-sm text-muted-foreground">Unable to load budget data</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Search and Filters */}
         {reportees.length > 0 && (
