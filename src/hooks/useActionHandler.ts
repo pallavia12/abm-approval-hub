@@ -2,6 +2,15 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
+// API Configuration - matches Dashboard.tsx
+const getApiBaseUrl = () => {
+  return import.meta.env.VITE_API_BASE_URL || "https://ninjasndanalytics.app.n8n.cloud";
+};
+
+const getApiUrl = (endpoint: string) => {
+  return `${getApiBaseUrl()}/webhook/${endpoint}`;
+};
+
 export interface ActionResult {
   requestId: string;
   action: 'ACCEPTED' | 'REJECTED' | 'MODIFIED' | 'ESCALATED';
@@ -20,8 +29,7 @@ export const useActionHandler = () => {
     console.log('Sending to discount update webhook:', data);
     
     try {
-      const response = await fetch('https://ninjasndanalytics.app.n8n.cloud/webhook/update-discount-request', {
-        //'http://localhost:5678/webhook-test/update-discount-request', {
+      const response = await fetch(getApiUrl('update-discount-request'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)

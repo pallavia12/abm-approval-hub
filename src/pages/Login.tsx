@@ -6,6 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 
+// API Configuration
+const getApiBaseUrl = () => {
+  return import.meta.env.VITE_API_BASE_URL || "https://ninjasndanalytics.app.n8n.cloud";
+};
+
 const Login = () => {
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -27,14 +32,16 @@ const Login = () => {
     
     try {
       // Validate username with webhook
+      const apiBaseUrl = getApiBaseUrl();
       const response = await fetch(
-        `https://ninjasndanalytics.app.n8n.cloud/webhook/check-abm-user?username=${encodeURIComponent(username.trim())}`, {
-        //`http://localhost:5678/webhook-test/check-abm-user?username=${encodeURIComponent(username.trim())}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+        `${apiBaseUrl}/webhook/check-abm-user?username=${encodeURIComponent(username.trim())}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to validate username");
