@@ -168,12 +168,15 @@ const Dashboard = () => {
       
       const result = await response.json();
       console.log('[Dashboard] Budget API result:', result);
+      console.log('[Dashboard] Budget API result.data:', result.data);
       
       if (result.success && result.data) {
         // Calculate balance in frontend
         const allocated = parseFloat(result.data.allocatedBudget) || 0;
         const consumed = parseFloat(result.data.consumedBudget) || 0;
         const balance = allocated - consumed;
+
+        console.log('[Dashboard] Parsed budget values:', { allocated, consumed, balance });
 
         setBudgetData({
           allocatedBudget: allocated,
@@ -198,8 +201,14 @@ const Dashboard = () => {
       // If it's a 404 or network error, the backend might not be available
       // This is okay if using n8n, so we'll just not show budget data
       if (error instanceof Error) {
+        console.error('[Dashboard] Error details:', {
+          message: error.message,
+          name: error.name,
+          stack: error.stack
+        });
         if (error.message.includes('404') || error.message.includes('Failed to fetch')) {
           console.log('[Dashboard] Budget endpoint not available (likely using n8n), skipping budget display');
+          console.log('[Dashboard] Make sure backend is running on port 3001 and VITE_API_BASE_URL is set correctly');
         }
       }
       // Set default values on error

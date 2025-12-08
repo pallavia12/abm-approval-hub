@@ -23,6 +23,16 @@ export const fetchBudget = async (req: Request, res: Response) => {
 
     console.log('[Budget Controller] Fetching budget for yearWeek:', yearWeek);
 
+    // First, let's check what yearWeek values exist in the database
+    const checkQuery = `
+      SELECT DISTINCT yearWeek 
+      FROM campaign.DiscountRequestAbmBudget 
+      ORDER BY yearWeek DESC 
+      LIMIT 10
+    `;
+    const [checkRows] = await pool.execute(checkQuery) as any;
+    console.log('[Budget Controller] Available yearWeek values in DB:', checkRows.map((r: any) => r.yearWeek));
+
     // Query the DiscountRequestAbmBudget table using the provided query format
     const query = `
       SELECT allocatedBudget, consumedBudget 
@@ -30,11 +40,15 @@ export const fetchBudget = async (req: Request, res: Response) => {
       WHERE yearWeek = ?
     `;
     
-    console.log('[Budget Controller] Executing query with yearWeek:', yearWeek);
+    console.log('[Budget Controller] Executing query:', query);
+    console.log('[Budget Controller] Query parameters:', [yearWeek]);
+    
     const [rows] = await pool.execute(query, [yearWeek]) as any;
-    console.log('[Budget Controller] Query result:', rows);
+    console.log('[Budget Controller] Query result rows:', rows.length);
+    console.log('[Budget Controller] Query result data:', JSON.stringify(rows, null, 2));
     
     if (rows.length === 0) {
+      console.log('[Budget Controller] No rows found for yearWeek:', yearWeek);
       // Return default values if no budget record found
       return res.json({
         success: true,
@@ -46,8 +60,12 @@ export const fetchBudget = async (req: Request, res: Response) => {
     }
 
     const budget = rows[0];
+    console.log('[Budget Controller] Raw budget data:', budget);
+    
     const allocated = parseFloat(budget.allocatedBudget) || 0;
     const consumed = parseFloat(budget.consumedBudget) || 0;
+    
+    console.log('[Budget Controller] Parsed values:', { allocated, consumed });
 
     res.json({
       success: true,
@@ -57,7 +75,11 @@ export const fetchBudget = async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching budget:', error);
+    console.error('[Budget Controller] Error fetching budget:', error);
+    if (error instanceof Error) {
+      console.error('[Budget Controller] Error message:', error.message);
+      console.error('[Budget Controller] Error stack:', error.stack);
+    }
     res.status(500).json({ 
       success: false, 
       message: 'Failed to fetch budget',
