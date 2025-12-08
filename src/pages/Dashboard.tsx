@@ -108,19 +108,31 @@ const Dashboard = () => {
   // Helper function to get current week (Monday to Sunday)
   const getCurrentWeek = () => {
     const now = new Date();
+    // Get local date components to avoid timezone issues
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const date = now.getDate();
     const day = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    // Calculate days to subtract to get to Monday
-    // If today is Sunday (0), subtract 6 days to get Monday
-    // If today is Monday (1), subtract 0 days
-    // If today is Tuesday (2), subtract 1 day, etc.
-    const daysToMonday = day === 0 ? 6 : day - 1;
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - daysToMonday);
-    monday.setHours(0, 0, 0, 0);
     
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
+    // Calculate days to subtract to get to Monday
+    // If today is Sunday (0), we want last Monday (subtract 6 days)
+    // If today is Monday (1), we want today (subtract 0 days)
+    // If today is Tuesday (2), we want yesterday (subtract 1 day)
+    // etc.
+    let daysToMonday;
+    if (day === 0) {
+      // Sunday: go back 6 days to get Monday
+      daysToMonday = 6;
+    } else {
+      // Monday (1) through Saturday (6): subtract (day - 1) days
+      daysToMonday = day - 1;
+    }
+    
+    // Create Monday date using local date components
+    const monday = new Date(year, month, date - daysToMonday, 0, 0, 0, 0);
+    
+    // Create Sunday date (6 days after Monday)
+    const sunday = new Date(year, month, date - daysToMonday + 6, 23, 59, 59, 999);
     
     return { monday, sunday };
   };
@@ -199,12 +211,20 @@ const Dashboard = () => {
 
       console.log('[Dashboard] Parsed budget values:', { allocated, consumed, balance });
 
+      // Format dates as YYYY-MM-DD using local date components to avoid timezone issues
+      const formatDateString = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
       setBudgetData({
         allocatedBudget: allocated,
         consumedBudget: consumed,
         balance: balance,
-        weekStart: monday.toISOString().split('T')[0],
-        weekEnd: sunday.toISOString().split('T')[0],
+        weekStart: formatDateString(monday),
+        weekEnd: formatDateString(sunday),
       });
     } catch (error) {
       console.error('[Dashboard] Error fetching budget:', error);
@@ -216,12 +236,18 @@ const Dashboard = () => {
       }
       // Set default values on error
       const { monday, sunday } = getCurrentWeek();
+      const formatDateString = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
       setBudgetData({
         allocatedBudget: 0,
         consumedBudget: 0,
         balance: 0,
-        weekStart: monday.toISOString().split('T')[0],
-        weekEnd: sunday.toISOString().split('T')[0],
+        weekStart: formatDateString(monday),
+        weekEnd: formatDateString(sunday),
       });
     } finally {
       setIsLoadingBudget(false);
@@ -655,6 +681,9 @@ const Dashboard = () => {
         {/* Budget Summary Card */}
         {budgetData && (
           <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Weekly Cart level Campaign Budget</CardTitle>
+            </CardHeader>
             <CardContent className="p-6">
               {isLoadingBudget ? (
                 <div className="flex items-center justify-center py-4">
