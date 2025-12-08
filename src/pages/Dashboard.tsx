@@ -121,13 +121,13 @@ const Dashboard = () => {
     return { monday, sunday };
   };
 
-  // Helper function to format yearWeek (YYYY-WW format)
+  // Helper function to format yearWeek (WW format - just week number)
   const getYearWeek = (date: Date) => {
     const year = date.getFullYear();
     const startOfYear = new Date(year, 0, 1);
     const days = Math.floor((date.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
     const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
-    return `${year}-${weekNumber.toString().padStart(2, '0')}`;
+    return weekNumber.toString().padStart(2, '0');
   };
 
   // Format date for display (e.g., "01 Dec")
@@ -137,25 +137,36 @@ const Dashboard = () => {
     return `${day} ${month}`;
   };
 
-  // Fetch budget data
+  // Fetch budget data from n8n webhook
   const fetchBudgetData = async () => {
     setIsLoadingBudget(true);
     try {
       // Calculate current week dates in frontend
       const { monday, sunday } = getCurrentWeek();
-      const yearWeek = getYearWeek(monday);
+      const yearWeek = getYearWeek(monday); // Format: 'WW' (just week number)
+      const asgardUsername = localStorage.getItem("asgard_username") || "";
 
-      const apiBaseUrl = getApiBaseUrl();
-      const budgetUrl = `${apiBaseUrl}/api/budget?yearWeek=${encodeURIComponent(yearWeek)}`;
+      if (!asgardUsername) {
+        console.warn('[Dashboard] No username found, cannot fetch budget');
+        setIsLoadingBudget(false);
+        return;
+      }
+
+      // Use n8n webhook API
+      const budgetUrl = `https://ninjasndanalytics.app.n8n.cloud/webhook/get-abm-budget`;
       
       console.log('[Dashboard] Fetching budget from:', budgetUrl);
-      console.log('[Dashboard] Current week:', { monday: monday.toISOString(), sunday: sunday.toISOString(), yearWeek });
+      console.log('[Dashboard] Current week:', { monday: monday.toISOString(), sunday: sunday.toISOString(), yearWeek, abmUsername: asgardUsername });
       
       const response = await fetch(budgetUrl, {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          abmUsername: asgardUsername,
+          yearWeek: yearWeek
+        }),
       });
       
       console.log('[Dashboard] Budget response status:', response.status);
@@ -168,48 +179,28 @@ const Dashboard = () => {
       
       const result = await response.json();
       console.log('[Dashboard] Budget API result:', result);
-      console.log('[Dashboard] Budget API result.data:', result.data);
       
-      if (result.success && result.data) {
-        // Calculate balance in frontend
-        const allocated = parseFloat(result.data.allocatedBudget) || 0;
-        const consumed = parseFloat(result.data.consumedBudget) || 0;
-        const balance = allocated - consumed;
+      // Calculate balance in frontend
+      const allocated = parseFloat(result.allocatedBudget) || parseFloat(result.allocated) || 0;
+      const consumed = parseFloat(result.consumedBudget) || parseFloat(result.consumed) || 0;
+      const balance = allocated - consumed;
 
-        console.log('[Dashboard] Parsed budget values:', { allocated, consumed, balance });
+      console.log('[Dashboard] Parsed budget values:', { allocated, consumed, balance });
 
-        setBudgetData({
-          allocatedBudget: allocated,
-          consumedBudget: consumed,
-          balance: balance,
-          weekStart: monday.toISOString().split('T')[0],
-          weekEnd: sunday.toISOString().split('T')[0],
-        });
-      } else {
-        console.warn('[Dashboard] Budget API returned unsuccessful result:', result);
-        // Set default values if API returns but with no data
-        setBudgetData({
-          allocatedBudget: 0,
-          consumedBudget: 0,
-          balance: 0,
-          weekStart: monday.toISOString().split('T')[0],
-          weekEnd: sunday.toISOString().split('T')[0],
-        });
-      }
+      setBudgetData({
+        allocatedBudget: allocated,
+        consumedBudget: consumed,
+        balance: balance,
+        weekStart: monday.toISOString().split('T')[0],
+        weekEnd: sunday.toISOString().split('T')[0],
+      });
     } catch (error) {
       console.error('[Dashboard] Error fetching budget:', error);
-      // If it's a 404 or network error, the backend might not be available
-      // This is okay if using n8n, so we'll just not show budget data
       if (error instanceof Error) {
         console.error('[Dashboard] Error details:', {
           message: error.message,
-          name: error.name,
-          stack: error.stack
+          name: error.name
         });
-        if (error.message.includes('404') || error.message.includes('Failed to fetch')) {
-          console.log('[Dashboard] Budget endpoint not available (likely using n8n), skipping budget display');
-          console.log('[Dashboard] Make sure backend is running on port 3001 and VITE_API_BASE_URL is set correctly');
-        }
       }
       // Set default values on error
       const { monday, sunday } = getCurrentWeek();

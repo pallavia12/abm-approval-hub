@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import requestRoutes from './routes/requests.js';
 import reporteeRoutes from './routes/reportees.js';
 import authRoutes from './routes/auth.js';
-import budgetRoutes from './routes/budget.js';
+// Budget routes removed - using n8n webhook API instead
 
 dotenv.config();
 
@@ -22,7 +22,7 @@ app.use(express.json());
 app.use('/webhook', requestRoutes);
 app.use('/webhook', reporteeRoutes);
 app.use('/webhook', authRoutes);
-app.use('/api', budgetRoutes);
+// Budget API removed - using n8n webhook API instead
 
 // Health check
 app.get('/health', (req, res) => {
