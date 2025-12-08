@@ -109,9 +109,13 @@ const Dashboard = () => {
   const getCurrentWeek = () => {
     const now = new Date();
     const day = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+    // Calculate days to subtract to get to Monday
+    // If today is Sunday (0), subtract 6 days to get Monday
+    // If today is Monday (1), subtract 0 days
+    // If today is Tuesday (2), subtract 1 day, etc.
+    const daysToMonday = day === 0 ? 6 : day - 1;
     const monday = new Date(now);
-    monday.setDate(diff);
+    monday.setDate(now.getDate() - daysToMonday);
     monday.setHours(0, 0, 0, 0);
     
     const sunday = new Date(monday);
@@ -180,9 +184,20 @@ const Dashboard = () => {
       const result = await response.json();
       console.log('[Dashboard] Budget API result:', result);
       
+      // Parse the API response structure: [{success: true, data: [{allocatedBudget, consumedBudget}]}]
+      let allocated = 0;
+      let consumed = 0;
+      
+      if (Array.isArray(result) && result.length > 0) {
+        const responseObj = result[0];
+        if (responseObj.success && Array.isArray(responseObj.data) && responseObj.data.length > 0) {
+          const budgetData = responseObj.data[0];
+          allocated = parseFloat(budgetData.allocatedBudget) || 0;
+          consumed = parseFloat(budgetData.consumedBudget) || 0;
+        }
+      }
+      
       // Calculate balance in frontend
-      const allocated = parseFloat(result.allocatedBudget) || parseFloat(result.allocated) || 0;
-      const consumed = parseFloat(result.consumedBudget) || parseFloat(result.consumed) || 0;
       const balance = allocated - consumed;
 
       console.log('[Dashboard] Parsed budget values:', { allocated, consumed, balance });
