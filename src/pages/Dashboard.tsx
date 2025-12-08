@@ -184,17 +184,14 @@ const Dashboard = () => {
       const result = await response.json();
       console.log('[Dashboard] Budget API result:', result);
       
-      // Parse the API response structure: [{success: true, data: [{allocatedBudget, consumedBudget}]}]
+      // Parse the API response structure: [{allocatedBudget, consumedBudget}]
       let allocated = 0;
       let consumed = 0;
       
       if (Array.isArray(result) && result.length > 0) {
-        const responseObj = result[0];
-        if (responseObj.success && Array.isArray(responseObj.data) && responseObj.data.length > 0) {
-          const budgetData = responseObj.data[0];
-          allocated = parseFloat(budgetData.allocatedBudget) || 0;
-          consumed = parseFloat(budgetData.consumedBudget) || 0;
-        }
+        const budgetData = result[0];
+        allocated = parseFloat(budgetData.allocatedBudget) || 0;
+        consumed = parseFloat(budgetData.consumedBudget) || 0;
       }
       
       // Calculate balance in frontend
