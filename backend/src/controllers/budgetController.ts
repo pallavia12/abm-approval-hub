@@ -1,22 +1,6 @@
 import { Request, Response } from 'express';
 import pool from '../config/database.js';
 
-// Helper function to get current week (Monday to Sunday)
-const getCurrentWeek = () => {
-  const now = new Date();
-  const day = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
-  const monday = new Date(now);
-  monday.setDate(diff);
-  monday.setHours(0, 0, 0, 0);
-  
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  sunday.setHours(23, 59, 59, 999);
-  
-  return { monday, sunday };
-};
-
 // Helper function to format yearWeek (YYYY-WW format)
 const getYearWeek = (date: Date) => {
   const year = date.getFullYear();
@@ -28,36 +12,26 @@ const getYearWeek = (date: Date) => {
 
 export const fetchBudget = async (req: Request, res: Response) => {
   try {
-    const { username } = req.query;
+    const { yearWeek } = req.query;
     
-    if (!username || typeof username !== 'string') {
+    if (!yearWeek || typeof yearWeek !== 'string') {
       return res.status(400).json({ 
         success: false, 
-        message: 'Username is required' 
+        message: 'yearWeek is required' 
       });
     }
 
-    const { monday, sunday } = getCurrentWeek();
-    const yearWeek = getYearWeek(monday);
+    console.log('[Budget Controller] Fetching budget for yearWeek:', yearWeek);
 
-    console.log('[Budget Controller] Fetching budget for:', { username, yearWeek, monday: monday.toISOString(), sunday: sunday.toISOString() });
-
-    // Query the DiscountRequestAbmBudget table
-    // Try multiple yearWeek formats in case the format doesn't match
+    // Query the DiscountRequestAbmBudget table using the provided query format
     const query = `
-      SELECT 
-        allocatedBudget,
-        consumedBudget,
-        yearWeek
-      FROM campaign.DiscountRequestAbmBudget
-      WHERE abmUsername = ? 
-        AND yearWeek = ?
-        AND Deleted = 0
-      LIMIT 1
+      SELECT allocatedBudget, consumedBudget 
+      FROM campaign.DiscountRequestAbmBudget 
+      WHERE yearWeek = ?
     `;
     
-    console.log('[Budget Controller] Executing query with params:', [username, yearWeek]);
-    const [rows] = await pool.execute(query, [username, yearWeek]) as any;
+    console.log('[Budget Controller] Executing query with yearWeek:', yearWeek);
+    const [rows] = await pool.execute(query, [yearWeek]) as any;
     console.log('[Budget Controller] Query result:', rows);
     
     if (rows.length === 0) {
@@ -66,11 +40,7 @@ export const fetchBudget = async (req: Request, res: Response) => {
         success: true,
         data: {
           allocatedBudget: 0,
-          consumedBudget: 0,
-          balance: 0,
-          weekStart: monday.toISOString().split('T')[0],
-          weekEnd: sunday.toISOString().split('T')[0],
-          yearWeek
+          consumedBudget: 0
         }
       });
     }
@@ -78,17 +48,12 @@ export const fetchBudget = async (req: Request, res: Response) => {
     const budget = rows[0];
     const allocated = parseFloat(budget.allocatedBudget) || 0;
     const consumed = parseFloat(budget.consumedBudget) || 0;
-    const balance = allocated - consumed;
 
     res.json({
       success: true,
       data: {
         allocatedBudget: allocated,
-        consumedBudget: consumed,
-        balance: balance,
-        weekStart: monday.toISOString().split('T')[0],
-        weekEnd: sunday.toISOString().split('T')[0],
-        yearWeek
+        consumedBudget: consumed
       }
     });
   } catch (error) {

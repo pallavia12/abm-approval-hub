@@ -105,14 +105,51 @@ const Dashboard = () => {
     isRequestLoading,
     isBulkLoading
   } = useActionHandler();
+  // Helper function to get current week (Monday to Sunday)
+  const getCurrentWeek = () => {
+    const now = new Date();
+    const day = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+    const monday = new Date(now);
+    monday.setDate(diff);
+    monday.setHours(0, 0, 0, 0);
+    
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+    
+    return { monday, sunday };
+  };
+
+  // Helper function to format yearWeek (YYYY-WW format)
+  const getYearWeek = (date: Date) => {
+    const year = date.getFullYear();
+    const startOfYear = new Date(year, 0, 1);
+    const days = Math.floor((date.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
+    const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
+    return `${year}-${weekNumber.toString().padStart(2, '0')}`;
+  };
+
+  // Format date for display (e.g., "01 Dec")
+  const formatDateDisplay = (date: Date) => {
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = date.toLocaleString('en-US', { month: 'short' });
+    return `${day} ${month}`;
+  };
+
   // Fetch budget data
-  const fetchBudgetData = async (asgardUsername: string) => {
+  const fetchBudgetData = async () => {
     setIsLoadingBudget(true);
     try {
+      // Calculate current week dates in frontend
+      const { monday, sunday } = getCurrentWeek();
+      const yearWeek = getYearWeek(monday);
+
       const apiBaseUrl = getApiBaseUrl();
-      const budgetUrl = `${apiBaseUrl}/api/budget?username=${encodeURIComponent(asgardUsername)}`;
+      const budgetUrl = `${apiBaseUrl}/api/budget?yearWeek=${encodeURIComponent(yearWeek)}`;
       
       console.log('[Dashboard] Fetching budget from:', budgetUrl);
+      console.log('[Dashboard] Current week:', { monday: monday.toISOString(), sunday: sunday.toISOString(), yearWeek });
       
       const response = await fetch(budgetUrl, {
         method: 'GET',
@@ -133,13 +170,28 @@ const Dashboard = () => {
       console.log('[Dashboard] Budget API result:', result);
       
       if (result.success && result.data) {
-        setBudgetData(result.data);
+        // Calculate balance in frontend
+        const allocated = parseFloat(result.data.allocatedBudget) || 0;
+        const consumed = parseFloat(result.data.consumedBudget) || 0;
+        const balance = allocated - consumed;
+
+        setBudgetData({
+          allocatedBudget: allocated,
+          consumedBudget: consumed,
+          balance: balance,
+          weekStart: monday.toISOString().split('T')[0],
+          weekEnd: sunday.toISOString().split('T')[0],
+        });
       } else {
         console.warn('[Dashboard] Budget API returned unsuccessful result:', result);
         // Set default values if API returns but with no data
-        if (result.data) {
-          setBudgetData(result.data);
-        }
+        setBudgetData({
+          allocatedBudget: 0,
+          consumedBudget: 0,
+          balance: 0,
+          weekStart: monday.toISOString().split('T')[0],
+          weekEnd: sunday.toISOString().split('T')[0],
+        });
       }
     } catch (error) {
       console.error('[Dashboard] Error fetching budget:', error);
@@ -150,17 +202,18 @@ const Dashboard = () => {
           console.log('[Dashboard] Budget endpoint not available (likely using n8n), skipping budget display');
         }
       }
+      // Set default values on error
+      const { monday, sunday } = getCurrentWeek();
+      setBudgetData({
+        allocatedBudget: 0,
+        consumedBudget: 0,
+        balance: 0,
+        weekStart: monday.toISOString().split('T')[0],
+        weekEnd: sunday.toISOString().split('T')[0],
+      });
     } finally {
       setIsLoadingBudget(false);
     }
-  };
-
-  // Format date for display (e.g., "01 Dec")
-  const formatDateDisplay = (dateString: string) => {
-    const date = new Date(dateString);
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = date.toLocaleString('en-US', { month: 'short' });
-    return `${day} ${month}`;
   };
 
   useEffect(() => {
@@ -172,7 +225,7 @@ const Dashboard = () => {
     setUsername(asgardUsername);
     
     // Fetch budget data on page load
-    fetchBudgetData(asgardUsername);
+    fetchBudgetData();
 
     // Sequential API calls for requests and reportees with independent error handling
     const fetchData = async () => {
@@ -611,7 +664,7 @@ const Dashboard = () => {
                   <div className="flex flex-col">
                     <span className="text-sm text-muted-foreground mb-1">Period</span>
                     <span className="text-base font-medium">
-                      {formatDateDisplay(budgetData.weekStart)} – {formatDateDisplay(budgetData.weekEnd)}
+                      {formatDateDisplay(new Date(budgetData.weekStart))} – {formatDateDisplay(new Date(budgetData.weekEnd))}
                     </span>
                   </div>
                   
